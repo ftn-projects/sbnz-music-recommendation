@@ -2,10 +2,12 @@ package com.ftn.model;
 
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Genre {
     @EqualsAndHashCode.Include private UUID id;

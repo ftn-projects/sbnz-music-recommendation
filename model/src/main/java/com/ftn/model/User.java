@@ -1,5 +1,6 @@
 package com.ftn.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -7,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
     @EqualsAndHashCode.Include private UUID id;
@@ -16,14 +18,15 @@ public class User {
     private Preferences preferences;
 
     @Data
-    public class Preferences {
+    @AllArgsConstructor
+    public static class Preferences {
         private Boolean explicitContent;
-        private Boolean excludeOwned;
-        private Boolean excludeRecent;
+        private Boolean includeOwned;
+        private Boolean includeRecent;
 
         @Override
         public String toString() {
-            return "User.Preferences [" + "explicitContent=" + explicitContent + ", excludeOwned=" + excludeOwned + ", excludeRecent=" + excludeRecent + ']';
+            return "User.Preferences [" + "explicitContent=" + explicitContent + ", excludeOwned=" + includeOwned + ", excludeRecent=" + includeRecent + ']';
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.ftn.model.track;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -7,17 +8,20 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
+@AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Track {
     @EqualsAndHashCode.Include private UUID id;
     private String title;
-    private String artistId;
+    private String artist;
     private Integer releaseYear;
-    private List<String> genreIds;
+    private List<UUID> genreIds;
     private Features features;
+    private Boolean explicit;
 
     @Data
-    public class Features {
+    @AllArgsConstructor
+    public static class Features {
         private Double danceability;
         private Double energy;
         private Double loudness;

@@ -1,0 +1,51 @@
+package rules.specificationRules
+
+import com.ftn.model.request.ProfileRequest
+import com.ftn.model.request.SeedTrackRequest
+import com.ftn.model.specification.FilterSpecification
+import com.ftn.model.specification.ScoringSpecification
+import com.ftn.model.User
+
+rule "Create filtering and scoring specifications for profie request"
+    when
+        $r: ProfileRequest( $userId: userId )
+        $u: User (id == $userId, $preferences: preferences )
+    then
+        FilterSpecification filter = FilterSpecification();
+        filter.setAllowExplicit($preferences.getExplicitContent());
+        filter.setContextGenreIds(null);
+        filter.setContextReleaseYear(null);
+        filter.setYearDeltaMax(null);
+        insert(filter);
+        ScoringSpecification score = new ScoringSpecification(
+            1.0,
+            1.0,
+            1.0,
+            0.0,      
+            0.0       
+        );
+        insert(score);
+end
+
+rule "Create filtering and scoring specifications for seed request"
+    when
+        $r: SeedTrackRequest($userId: userId, $strackId: seedTrackId)
+        $u: User(id == $userId, $preferences: preferences)
+    then
+        FilterSpecification filter = FilterSpecification();
+        filter.setAllowExplicit($preferences.getExplicitContent());
+        filter.setContextGenreIds(null);
+        filter.setContextReleaseYear(null);
+        filter.setYearDeltaMax(null);
+        filter.setForbiddenTrackIds(new ArrayList<>());
+        filter.getForbiddenTrackIds().add($strackId);
+        insert(filter);
+        ScoringSpecification score = new ScoringSpecification(
+            0.0,
+            0.0,
+            0.0,
+            1.0,      
+            1.0       
+        );
+        insert(score);
+end
