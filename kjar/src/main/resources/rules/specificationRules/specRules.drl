@@ -1,17 +1,19 @@
 package rules.specificationRules
 
+import java.util.List
 import com.ftn.model.request.ProfileRequest
 import com.ftn.model.request.SeedTrackRequest
 import com.ftn.model.specification.FilterSpecification
 import com.ftn.model.specification.ScoringSpecification
 import com.ftn.model.User
+import com.ftn.model.track.Track
 
 rule "Create filtering and scoring specifications for profie request"
     when
         $r: ProfileRequest( $userId: userId )
-        $u: User (id == $userId, $preferences: preferences )
+        $u: User ( id == $userId, $preferences: preferences )
     then
-        FilterSpecification filter = FilterSpecification();
+        FilterSpecification filter = new FilterSpecification();
         filter.setAllowExplicit($preferences.getExplicitContent());
         filter.setContextGenreIds(null);
         filter.setContextReleaseYear(null);
@@ -21,24 +23,26 @@ rule "Create filtering and scoring specifications for profie request"
             1.0,
             1.0,
             1.0,
-            0.0,      
-            0.0       
+            0.0,
+            0.0
         );
         insert(score);
 end
 
 rule "Create filtering and scoring specifications for seed request"
     when
-        $r: SeedTrackRequest($userId: userId, $strackId: seedTrackId)
-        $u: User(id == $userId, $preferences: preferences)
+        $r: SeedTrackRequest( $userId: userId, $strackId: seedTrackId )
+        $t: Track( id == $strackId, $genreIds: genreIds, $releaseYear: releaseYear )
+        $u: User( id == $userId, $preferences: preferences )
     then
-        FilterSpecification filter = FilterSpecification();
-        filter.setAllowExplicit($preferences.getExplicitContent());
-        filter.setContextGenreIds(null);
-        filter.setContextReleaseYear(null);
-        filter.setYearDeltaMax(null);
-        filter.setForbiddenTrackIds(new ArrayList<>());
-        filter.getForbiddenTrackIds().add($strackId);
+        FilterSpecification filter = new FilterSpecification(
+            $preferences.getExplicitContent(),
+            List.of($strackId),
+            $genreIds,
+            $releaseYear,
+            0.8,
+            5
+        );
         insert(filter);
         ScoringSpecification score = new ScoringSpecification(
             0.0,

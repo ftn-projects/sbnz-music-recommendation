@@ -24,7 +24,6 @@ public class Track {
     public static class Features {
         private Double danceability;
         private Double energy;
-        private Double loudness;
         private Double speechiness;
         private Double acousticness;
         private Double instrumentalness;
@@ -36,7 +35,6 @@ public class Track {
             return "Track.Features ["
                 + "danceability=" + danceability
                 + ", energy=" + energy
-                + ", loudness=" + loudness
                 + ", speechiness=" + speechiness
                 + ", acousticness=" + acousticness
                 + ", instrumentalness=" + instrumentalness

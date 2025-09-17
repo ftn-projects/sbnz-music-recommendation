@@ -1,0 +1,16 @@
+id,title,artist,releaseYear,explicit,genres,danceability,energy,speechiness,acousticness,instrumentalness,liveness,valence
+b1a2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,Supermassive Black Hole,Muse,2006,false,e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b;a1f2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c,0.6,0.89,0.04,0.04,0.01,0.35,0.84
+c2d3e4f5-a6b7-4c8d-9e0f-1a2b3c4d5e6f,Smells Like Teen Spirit,Nirvana,1991,false,e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b;c3d4e5f6-a7b8-4c9d-8e0f-1a2b3c4d5e6f,0.5,0.95,0.05,0.1,0.0,0.18,0.6
+d3e4f5a6-b7c8-4d9e-0f1a-2b3c4d5e6f7a,Bohemian Rhapsody,Queen,1975,false,c0d1e2f3-a4b5-4c6d-7e8f-9a0b1c2d3e4f;f1e2d3c4-b5a6-4f7e-8d9c-0b1a2c3d4e5f,0.4,0.6,0.04,0.3,0.0,0.85,0.5
+e4f5a6b7-c8d9-4e0f-1a2b-3c4d5e6f7a8b,Shape of You,Ed Sheeran,2017,false,f1e2d3c4-b5a6-4f7e-8d9c-0b1a2c3d4e5f,0.82,0.65,0.08,0.58,0.0,0.12,0.93
+f5a6b7c8-d9e0-4f1a-2b3c-4d5e6f7a8b9c,One More Time,Daft Punk,2000,false,a8b9c0d1-e2f3-4a5b-6c7d-8e9f0a1b2c3d;f1e2d3c4-b5a6-4f7e-8d9c-0b1a2c3d4e5f,0.79,0.82,0.07,0.01,0.85,0.22,0.95
+a6b7c8d9-e0f1-4a2b-3c4d-5e6f7a8b9c0d,Juicy,The Notorious B.I.G.,1994,true,a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d,0.81,0.72,0.36,0.12,0.0,0.09,0.85
+b7c8d9e0-f1a2-4b3c-4d5e-6f7a8b9c0d1e,Take Five,Dave Brubeck,1959,false,b3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e,0.55,0.45,0.04,0.72,0.0,0.13,0.7
+c8d9e0f1-a2b3-4c4d-5e6f-7a8b9c0d1e2f,Clair de Lune,Claude Debussy,1905,false,c4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f,0.18,0.12,0.03,0.98,0.92,0.04,0.4
+d9e0f1a2-b3c4-4d5e-6f7a-8b9c0d1e2f3a,Redemption Song,Bob Marley,1980,false,e6f7a8b9-c0d1-4e2f-3a4b-5c6d7e8f9a0b;f7a8b9c0-d1e2-4f3a-4b5c-6d7e8f9a0b1c,0.65,0.45,0.05,0.6,0.0,0.27,0.8
+e0f1a2b3-c4d5-4e6f-7a8b-9c0d1e2f3a4b,Blue in Green,Miles Davis,1959,false,b3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e,0.35,0.22,0.04,0.85,0.0,0.11,0.3
+f1a2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c,Wonderwall,Oasis,1995,false,a1f2b3c4-d5e6-4f7a-8b9c-0d1e2f3a4b5c;e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b,0.68,0.55,0.04,0.45,0.0,0.19,0.75
+a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d,God's Plan,Drake,2018,true,a2b3c4d5-e6f7-4a8b-9c0d-1e2f3a4b5c6d;f1e2d3c4-b5a6-4f7e-8d9c-0b1a2c3d4e5f,0.72,0.62,0.13,0.08,0.0,0.07,0.81
+b3c4d5e6-f7a8-4b9c-0d1e-2f3a4b5c6d7e,Take Me Out,Franz Ferdinand,2004,false,b9c0d1e2-f3a4-4b5c-6d7e-8f9a0b1c2d3e;e5f6a7b8-c9d0-4e1f-8a2b-3c4d5e6f7a8b,0.65,0.85,0.05,0.12,0.0,0.16,0.77
+c4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f,Für Elise,Ludwig van Beethoven,1810,false,c4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f,0.22,0.18,0.03,0.99,0.95,0.02,0.5
+d5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a,The Thrill Is Gone,B.B. King,1969,false,d5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a,0.48,0.52,0.06,0.65,0.0,0.23,0.55

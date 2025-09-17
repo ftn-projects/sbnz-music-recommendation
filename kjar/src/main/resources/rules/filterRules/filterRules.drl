@@ -17,10 +17,19 @@ end
 
 rule "Filter genre difference"
     when
-        $fs : FilterSpecification( contextGenres != null, genreDistanceMax != null )
+        $fs : FilterSpecification( contextGenreIds != null, contextGenreMaxDifference != null )
         $c  : TrackCandidate( $trackId : trackId )
         $t  : Track( id == $trackId )
-        eval( Scoring.distance($t.getGenres(), $fs.getContextGenreIds()) > $fs.getGenreDistanceMax() )
+        eval( Scoring.distance($t.getGenreIds(), $fs.getContextGenreIds()) >= $fs.getContextGenreMaxDifference() )
+    then
+        delete($c);
+end
+
+rule "Filter forbidden tracks"
+    when
+        $fs : FilterSpecification( forbiddenTrackIds != null )
+        $c  : TrackCandidate( $trackId : trackId )
+        eval( $fs.getForbiddenTrackIds().contains($trackId) )
     then
         delete($c);
 end
