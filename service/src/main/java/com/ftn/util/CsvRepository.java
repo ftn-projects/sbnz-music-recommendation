@@ -50,7 +50,7 @@ public class CsvRepository {
                     danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence
                 );
 
-                tracks.add(new Track(id, title, artist, releaseYear, genreIds, features, explicit));
+                tracks.add(new Track(id, title, artist, releaseYear, genreIds, features, explicit, 1));
             }
         } catch (Exception e) {
             e.printStackTrace();

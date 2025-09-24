@@ -2,6 +2,7 @@ package com.ftn.model.event;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.UUID;
 
 import org.kie.api.definition.type.Expires;
 import org.kie.api.definition.type.Role;
@@ -19,7 +20,7 @@ public class LikeEvent implements Serializable{
 
     private static final long serialVersionUID = 1L;
 
-    private String userId;
-    private String trackId;
+    private UUID userId;
+    private UUID trackId;
     private Instant timestamp;
 }
