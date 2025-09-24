@@ -14,7 +14,6 @@ import com.ftn.model.Genre;
 import com.ftn.model.User;
 import com.ftn.model.User.Preferences;
 import com.ftn.model.request.SeedTrackRequest;
-import com.ftn.model.specification.FilterSpecification;
 import com.ftn.model.track.Track;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.util.CsvRepository;

@@ -1,6 +1,13 @@
-<kmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://jboss.org/kie/6.0.0/kmodule">
-    <kbase name="rules" packages="rules.filterRules, rules.specificationRules">
-        <ksession name="k-session"/>
+<kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <!-- Classic rules (covers filterRules + specificationRules) -->
+    <kbase name="appRulesKBase" packages="rules.filterRules, rules.specificationRules">
+        <ksession name="appKsession" type="stateful"/>
+    </kbase>
+
+    <!-- CEP rules (everything under rules.cep) -->
+    <kbase name="musicCepKBase" packages="rules.cep" eventProcessingMode="stream">
+        <ksession name="musicCepKsession" type="stateful" clockType="realtime"/>
     </kbase>
 
 </kmodule>
