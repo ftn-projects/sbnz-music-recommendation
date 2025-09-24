@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.ftn.sbnz</groupId>
-	<artifactId>kjar</artifactId>
+	<artifactId>music-kjar</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>kjar</name>
 	<description>Demo project for Spring Boot</description>

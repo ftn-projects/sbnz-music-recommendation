@@ -1,0 +1,113 @@
+package rules.cep;
+
+declare entry-point "music-events"
+end
+
+import java.util.UUID;
+import java.time.Instant;
+import com.ftn.model.event.ListenEvent;
+import com.ftn.model.event.SkipEvent;
+import com.ftn.model.event.LikeEvent;
+import com.ftn.model.event.TrackLikedEvent;
+import com.ftn.model.event.TrackDislikedEvent;
+import com.ftn.model.event.GenreLikedEvent;
+import com.ftn.model.event.GenreDislikedEvent;
+import com.ftn.model.track.Track;
+
+declare GenreAffinity
+    @role( event )
+    @timestamp( timestamp )
+    @expires( 2d )
+    userId    : UUID
+    genreId   : UUID
+    score     : int
+    timestamp : long
+end
+
+rule "S1 increase track liked and genre affinity after 3 track listens"
+when
+    $track : Track($trackId : id, $trackDur : duration, $genreIds : genreIds)
+    $listen : ListenEvent($userId : userId, trackId == $trackId)
+    Number(intValue >= 3) from accumulate(
+        ListenEvent(userId == $userId, trackId == $trackId, $listenDur : duration)
+            over window:time(24h)
+            and eval((double) $listenDur / $trackDur > 0.75),
+        count(1)
+    )
+    $genreId : UUID() from $genreIds
+    not TrackLikedEvent(userId == $userId, trackId == $trackId)
+then
+    insert(new TrackLikedEvent($userId, $trackId));
+    insert(new GenreAffinity($userId, $genreId, 2, System.currentTimeMillis()));
+end
+
+rule "S2a like event base"
+when
+    $like : LikeEvent($userId : userId, $trackId : trackId)
+    $track : Track(id == $trackId, $genreIds : genreIds)
+    $genreId : UUID() from $genreIds
+then
+    insert(new TrackLikedEvent($userId, $trackId));
+    insert(new GenreAffinity($userId, $genreId, 2, System.currentTimeMillis()));
+end
+
+rule "S2b like event after recent listen bonus"
+when
+    $like : LikeEvent($userId : userId, $trackId : trackId, $ts : timestamp)
+    $track : Track(id == $trackId, $genreIds : genreIds)
+    exists ListenEvent(userId == $userId, trackId == $trackId, this before[0s,2m] $like)
+    $genreId : UUID() from $genreIds
+    not GenreAffinity(userId == $userId, genreId == $genreId, 
+                     this after $like, this before[0s,1s] $like)
+then
+    insert(new GenreAffinity($userId, $genreId, 1, System.currentTimeMillis()));
+end
+
+rule "S3a skip event base"
+when
+    $skip : SkipEvent($userId : userId, $trackId : trackId, $listenDur : duration)
+    $track : Track(id == $trackId, $genreIds : genreIds, $trackDur : duration)
+    eval((double) $listenDur / $trackDur < 0.25)
+    $genreId : UUID() from $genreIds
+then
+    insert(new TrackDislikedEvent($userId, $trackId));
+    insert(new GenreAffinity($userId, $genreId, -2, System.currentTimeMillis()));
+end
+
+rule "S3b early skip event bonus"
+when
+    $skip : SkipEvent($userId : userId, $trackId : trackId, $listenDur : duration)
+    eval($listenDur <= 10)
+    $track : Track(id == $trackId, $genreIds : genreIds)
+    $genreId : UUID() from $genreIds
+then
+    insert(new GenreAffinity($userId, $genreId, -1, System.currentTimeMillis()));
+end
+
+rule "G1: positive genre affinity in last hour -> GenreLikedEvent"
+when
+    GenreAffinity( $userId : userId, $genreId : genreId )
+    Number( intValue > 10 ) from accumulate(
+        GenreAffinity( userId == $userId, genreId == $genreId, $score : score )
+        over window:time(1h),
+        sum( $score )
+    )
+    not GenreLikedEvent( userId == $userId, genreId == $genreId )
+    over window:time(1h)
+then
+    insert( new GenreLikedEvent( $userId, $genreId ) );
+end
+
+rule "G2: negative genre affinity in last hour -> GenreDislikedEvent"
+when
+    GenreAffinity( $userId : userId, $genreId : genreId )
+    Number( intValue < -5 ) from accumulate(
+        GenreAffinity( userId == $userId, genreId == $genreId, $score : score )
+        over window:time(1h),
+        sum( $score )
+    )
+    not GenreDislikedEvent( userId == $userId, genreId == $genreId )
+    over window:time(1h)
+then
+    insert( new GenreDislikedEvent( $userId, $genreId ) );
+end

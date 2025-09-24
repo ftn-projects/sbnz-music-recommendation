@@ -1,26 +1,27 @@
 package com.ftn.model.event;
 
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.UUID;
 
 import org.kie.api.definition.type.Expires;
 import org.kie.api.definition.type.Role;
 import org.kie.api.definition.type.Timestamp;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Role(Role.Type.EVENT)
 @Timestamp("timestamp")
 @Expires("3h")
 @Data
-@AllArgsConstructor
-public class LikeEvent implements Serializable{
-
+@EqualsAndHashCode(callSuper = true)
+public class LikeEvent extends EventBase implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private UUID userId;
     private UUID trackId;
-    private Instant timestamp;
+
+    public LikeEvent(UUID userId, UUID trackId) {
+        super(userId);
+        this.trackId = trackId;
+    }
 }

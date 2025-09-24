@@ -15,15 +15,13 @@ import lombok.EqualsAndHashCode;
 @Expires("3h")
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SkipEvent extends EventBase implements Serializable {
+public class GenreLikedEvent extends EventBase implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private UUID trackId;
-    private Integer duration;
+    private UUID genreId;
 
-    public SkipEvent(UUID userId, UUID trackId, Integer duration) {
+    public GenreLikedEvent(UUID userId, UUID genreId) {
         super(userId);
-        this.trackId = trackId;
-        this.duration = duration;
+        this.genreId = genreId;
     }
 }

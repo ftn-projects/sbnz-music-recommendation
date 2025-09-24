@@ -12,6 +12,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import com.ftn.util.CsvRepository;
+
 import jakarta.annotation.PreDestroy;
 
 @SpringBootApplication
@@ -36,6 +38,11 @@ public class Application {
 	@Bean(destroyMethod = "dispose")
 	public KieSession musicCepKsession(KieContainer container) {
 		this.cep = container.newKieSession("musicCepKsession");
+
+		for (var track : new CsvRepository().loadTracks()) {
+			cep.insert(track);
+		}
+
 		log.info("Initialized musicCepKsession (STREAM/realtime).");
 		return cep;
 	}
@@ -56,10 +63,19 @@ public class Application {
 			ksession.addEventListener(new org.kie.api.event.rule.DefaultRuleRuntimeEventListener() {
 				@Override
 				public void objectInserted(org.kie.api.event.rule.ObjectInsertedEvent e) {
-					// e.getObject() instanceof GenreLiked/GenreDisliked -> persist/emit/log
 					log.info("[CEP] Object inserted: {}", e.getObject());
 				}
 			});
+			
+			ksession.addEventListener(new org.kie.api.event.rule.DefaultAgendaEventListener() {
+				@Override
+				public void afterMatchFired(org.kie.api.event.rule.AfterMatchFiredEvent event) {
+					log.info("[CEP] Rule fired: {} - {}", 
+						event.getMatch().getRule().getName(), 
+						event.getMatch().getObjects());
+				}
+			});
+			
 			ksession.registerChannel("out", o -> log.info("CEP OUT -> {}", o));
 		};
 	}
