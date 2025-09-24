@@ -1,2 +1,73 @@
 package rules.cep;
 
+import java.util.Date;
+import com.ftn.model.event.ListenEvent;
+import com.ftn.model.event.SkipEvent;
+import com.ftn.model.track.Track;
+
+declare GenreAffinity
+    @role( event )
+    @timestamp( timestamp )
+    @expires( 2d )
+    userId    : String
+    genre     : String
+    score     : int
+    timestamp : Instant
+end
+
+rule "S1 increase song liked and genre affinity after 3 song listens"
+when
+    $track : Track($trackId : id, $trackDur : duration)
+    $userId : String()
+        Number(intValue >= 3) from accumulate(
+        ListenEvent(userId == $userId, trackId == $trackId, $listenDur : duration)
+            over window:time(24h)
+            and eval((double) $listenDur / $trackDur > 0.75),
+        count(1)
+    )
+    $genre : Genre(trackId == $trackId, $gName : name)
+then
+    insert(new SongLiked($trackId));
+    insert(new GenreAffinity($userId, $gName, 2, java.time.Instant.now()));
+end
+
+rule "S2a like event base"
+when
+    $like : LikeEvent($userId : userId, $trackId : trackId)
+    $track : Track(id == $trackId, $genres : genres)
+    $genre : String() from $genres
+then
+    insert(new SongLiked($trackId));
+    insert(new GenreAffinity($userId, $genre, 2, java.time.Instant.now()));
+end
+
+rule "S2b like event after recent listen bonus"
+when
+    $like : LikeEvent($userId : userId, $trackId : trackId, $ts : timestamp)
+    $track : Track(id == $trackId, $genres : genres)
+    ListenEvent(userId == $userId, trackId == $trackId, this before[0s,2m] $like)
+    $genre : String() from $genres
+then
+    insert(new GenreAffinity($userId, $genre, 1, java.time.Instant.now()));
+end
+
+rule "S3a skip event base"
+when
+    $skip : SkipEvent($userId : userId, $trackId : trackId, $listenDur : duration)
+    $track : Track(id == $trackId, $genres : genres, $trackDur : duration)
+    eval((double) $listenDur / $trackDur < 0.25)
+    $genre : String() from $genres
+then
+    insert(new SongDisliked($trackId));
+    insert(new GenreAffinity($userId, $genre, -2, java.time.Instant.now()));
+end
+
+rule "S3b early skip event bonus"
+when
+    $skip : SkipEvent($userId : userId, $trackId : trackId, $listenDur : duration)
+    eval($listenDur <= 10)
+    $track : Track(id == $trackId, $genres : genres)
+    $genre : String() from $genres
+then
+    insert(new GenreAffinity($userId, $genre, -1, java.time.Instant.now()));
+end

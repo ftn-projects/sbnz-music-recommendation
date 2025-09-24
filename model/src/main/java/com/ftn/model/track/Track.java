@@ -18,6 +18,7 @@ public class Track {
     private List<UUID> genreIds;
     private Features features;
     private Boolean explicit;
+    private Integer duration;
 
     @Data
     @AllArgsConstructor
