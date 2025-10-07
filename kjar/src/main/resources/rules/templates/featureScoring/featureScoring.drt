@@ -1,0 +1,30 @@
+template header
+featureName
+featureGetter
+
+package templates.featureScoring
+
+import com.ftn.model.*;
+
+template "B3 - Profile feature scoring @{featureName}"
+rule "b3_@{featureName}_score"
+salience 80
+when
+    $spec : ScoringSpecification(wProfileFeatures != null && wProfileFeatures > 0)
+    $user : User($uid : id)
+    $track : Track($tid : id, features != null, $trackVal : features.@{featureGetter}())
+    $profileReq : ProfileRequest(userId == $uid, $pid : profileId)
+    $profile : Profile(id == $pid)
+    $profileFeatures : Track.Features() from $profile.getFeatures()
+    $profileVal : Double() from $profileFeatures.@{featureGetter}()
+
+    $similarity : Double() from (1.0 - Math.abs($trackVal - $profileVal))
+then
+    insert(new ScoreComponent(
+        $uid,
+        $tid,
+        ScoreComponent.Source.PROFILE_FEATURES,
+        $similarity * $spec.getWProfileFeatures()
+    ));
+end
+end template

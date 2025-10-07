@@ -1,0 +1,30 @@
+template header
+featureName
+featureGetter
+
+package templates.featureSimilarity
+
+import com.ftn.model.*;
+
+template "B5 - Seed track audio feature similarity @{featureName}"
+rule "b5_@{featureName}_score"
+when
+    $spec : ScoringSpecification(wSeedFeatures != null && wSeedFeatures > 0)
+
+    $user : User($uid : id)
+    $candidate : TrackCandidate(userId == $uid, $trackId : $tid)
+    $track : Track(id == $tid, features != null, $trackVal : features.@{featureGetter}())
+
+    $seedReq : SeedTrackRequest(userId == $uid, $seedTrackId : $seedId)
+    $seedTrack : Track(id == $seedId, features != null, $seedVal : features.@{featureGetter}())
+
+    $similarity : Double() from (1.0 - Math.abs($trackVal - $seedVal))
+then
+    insert(new ScoreComponent(
+        $uid,
+        $tid,
+        ScoreComponent.Source.SEED_FEATURES,
+        $similarity * $spec.getWSeedFeatures()
+    ));
+end
+end template
