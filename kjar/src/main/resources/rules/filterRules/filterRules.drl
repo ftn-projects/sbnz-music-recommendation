@@ -5,7 +5,7 @@ import com.ftn.model.track.TrackCandidate
 import com.ftn.model.track.Track
 import com.ftn.util.Scoring
 
-rule "Filter explicit songs"
+rule "Filter explicit songs" salience 20
     when
         $fs: FilterSpecification( allowExplicit == false )
         $c: TrackCandidate( $trackId: trackId )
@@ -15,7 +15,7 @@ rule "Filter explicit songs"
         delete($c);
 end
 
-rule "Filter genre difference"
+rule "Filter genre difference" salience 20
     when
         $fs : FilterSpecification( contextGenreIds != null, contextGenreMaxDifference != null )
         $c  : TrackCandidate( $trackId : trackId )
@@ -25,7 +25,7 @@ rule "Filter genre difference"
         delete($c);
 end
 
-rule "Filter forbidden tracks"
+rule "Filter forbidden tracks" salience 20
     when
         $fs : FilterSpecification( forbiddenTrackIds != null )
         $c  : TrackCandidate( $trackId : trackId )

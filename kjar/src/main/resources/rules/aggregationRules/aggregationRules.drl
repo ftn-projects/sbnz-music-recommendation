@@ -1,0 +1,17 @@
+package rules.aggregationRules
+
+import com.ftn.model.ScoreComponent;
+import com.ftn.model.track.TrackCandidate;
+import com.ftn.model.specification.ScoringSpecification;
+
+rule "A1 - Aggregate score components into TrackCandidate" salience -10
+when
+    $tc : TrackCandidate($uid : userId, $tid : trackId)
+    $sum : Number() from accumulate(
+        ScoreComponent(userId == $uid, trackId == $tid, $s : score),
+        sum($s)
+    )
+then
+    $tc.setScore($sum.doubleValue());
+    update($tc);
+end

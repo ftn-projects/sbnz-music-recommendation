@@ -1,4 +1,4 @@
-package com.ftn.service;
+package com.ftn.controller;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.kie.api.runtime.KieSession;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,16 +21,16 @@ import com.ftn.model.event.EventBase;
 import com.ftn.model.event.LikeEvent;
 import com.ftn.model.event.ListenEvent;
 import com.ftn.model.event.SkipEvent;
-import com.ftn.service.dto.LikeDTO;
-import com.ftn.service.dto.ListenDTO;
-import com.ftn.service.dto.SkipDTO;
+import com.ftn.dto.LikeDTO;
+import com.ftn.dto.ListenDTO;
+import com.ftn.dto.SkipDTO;
 
 @RestController
 @RequestMapping("/user-activity")
 public class UserActivityController {
     private final KieSession ksession;
 
-    public UserActivityController(KieSession musicCepKsession) {
+    public UserActivityController(@Qualifier("musicCepKsession") KieSession musicCepKsession) {
         this.ksession = musicCepKsession;
     }
 
@@ -54,7 +55,7 @@ public class UserActivityController {
     @GetMapping("/facts/{userId}")
     public ResponseEntity<Set<Object>> getFacts(@PathVariable UUID userId) {
         Set<Object> result = new HashSet<>();
-        
+
         // Query the main session for rule-generated facts
         ksession.getObjects(o -> {
             if (o instanceof EventBase) {
@@ -79,7 +80,7 @@ public class UserActivityController {
             wrapper.put("data", obj);
             result.add(wrapper);
         });
-        
+
         return ResponseEntity.ok(result);
     }
 }

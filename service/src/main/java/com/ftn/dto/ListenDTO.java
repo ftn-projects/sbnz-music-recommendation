@@ -1,4 +1,4 @@
-package com.ftn.service.dto;
+package com.ftn.dto;
 
 import java.util.UUID;
 
