@@ -6,6 +6,7 @@ import { Library } from './library/library';
 import { Recommendation } from './recommendation/recommendation';
 
 const routes: Routes = [
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'registration', component: Registration },
   { path: 'library', component: Library },

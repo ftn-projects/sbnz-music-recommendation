@@ -10,6 +10,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { Registration } from './registration/registration';
 import { Library } from './library/library';
 import { Recommendation } from './recommendation/recommendation';
+import { Navbar } from './navbar/navbar';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { Recommendation } from './recommendation/recommendation';
     LoginComponent,
     Registration,
     Library,
-    Recommendation
+    Recommendation,
+    Navbar
   ],
   imports: [
     BrowserModule,
