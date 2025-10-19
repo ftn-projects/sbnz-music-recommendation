@@ -1,5 +1,6 @@
 package com.ftn.config;
 
+import com.ftn.repository.GenreRepository;
 import com.ftn.repository.TrackRepository;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
@@ -21,9 +22,12 @@ public class DroolsConfiguration {
 
     private KieSession cepSession;
     private final TrackRepository trackRepository;
+    private KieSession backwardsSession;
+    private final GenreRepository genreRepository;
 
-    public DroolsConfiguration(TrackRepository trackRepository) {
+    public DroolsConfiguration(TrackRepository trackRepository, GenreRepository genreRepository) {
         this.trackRepository = trackRepository;
+        this.genreRepository = genreRepository;
     }
 
     @Bean
@@ -43,6 +47,13 @@ public class DroolsConfiguration {
         this.cepSession = container.newKieSession("musicCepKsession");
         log.info("Initialized musicCepKsession (STREAM/realtime), ready for track population.");
         return cepSession;
+    }
+
+    @Bean(destroyMethod = "dispose")
+    public KieSession backwardsKsession(KieContainer container) {
+        this.backwardsSession = container.newKieSession("backwardsKsession");
+        log.info("Initialized backwardsKsession, ready for genre population.");
+        return backwardsSession;
     }
 
     @Bean(destroyMethod = "dispose")
@@ -121,6 +132,19 @@ public class DroolsConfiguration {
                 log.info("Inserted batch: {} - {} / {}", offset + 1, Math.min(offset + batchSize, total), total);
             }
             log.info("Finished populating CEP session with all tracks.");
+        };
+    }
+
+    @Bean
+    public ApplicationRunner populateBackwardsGenresAsync(KieSession backwardsKsession) {
+        return args -> {
+            var genres = genreRepository.findAll();
+            long total = genres.size();
+            log.info("Populating Backwards session with {} genres", total);
+            for (var genre : genres) {
+                backwardsKsession.insert(genre);
+            }
+            log.info("Finished populating Backwards session with all genres.");
         };
     }
 

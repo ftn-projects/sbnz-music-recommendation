@@ -12,4 +12,5 @@ import lombok.EqualsAndHashCode;
 public class Genre {
     @EqualsAndHashCode.Include private UUID id;
     private String name;
+    private UUID parentId;
 }

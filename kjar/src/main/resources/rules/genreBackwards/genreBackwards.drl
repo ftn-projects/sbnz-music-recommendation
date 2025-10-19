@@ -1,0 +1,46 @@
+package rules.genreBackwardsl;
+
+import com.ftn.model.Genre;
+import com.ftn.model.User;
+import java.util.UUID;
+
+global Double LIKENESS_THRESHOLD;
+
+query userLikesDirectly( User $u, Genre $g )
+    eval( $u.getGenrePreferences().getOrDefault($g.getId(), 0.0) > LIKENESS_THRESHOLD )
+end
+
+query userLikesSubGenre( User $u, Genre $g )
+    $child : Genre( parentId == $g.getId() )
+    userLikes( $u, $child )
+end
+
+query userLikesBaseGenre( User $u, Genre $g )
+    Genre( this == $g, parentId != null )
+    $parent : Genre( id == $g.getParentId() )
+    userLikes( $u, $parent )
+end
+
+query userLikesSiblingGenre( User $u, Genre $g )
+    $sib : Genre( parentId == $g.getParentId(), id != $g.getId() )
+    userLikes( $u, $sib )
+end
+
+query userLikes( User $u, Genre $g )
+    userLikesDirectly( $u, $g )
+    or
+    userLikesSubGenre( $u, $g )
+    or
+    userLikesBaseGenre( $u, $g )
+    or
+    userLikesSiblingGenre( $u, $g )
+end
+
+rule "Debug liked genre"
+when
+    $u : User()
+    $g : Genre()
+    userLikes($u, $g)
+then
+    System.out.println($u.getName() + " likes genre: " + $g.getName());
+end

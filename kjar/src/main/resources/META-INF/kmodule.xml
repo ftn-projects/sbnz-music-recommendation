@@ -10,4 +10,9 @@
         <ksession name="musicCepKsession" type="stateful" clockType="realtime"/>
     </kbase>
 
+    <!-- Backwards rules -->
+    <kbase name="backwardsKBase" packages="rules.genreBackwards">
+        <ksession name="backwardsKsession" type="stateful" />
+    </kbase>
+
 </kmodule>

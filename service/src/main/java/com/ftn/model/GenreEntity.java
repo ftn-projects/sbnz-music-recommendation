@@ -19,4 +19,6 @@ public class GenreEntity {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id = UUID.randomUUID();
     private String name;
+    @Column(name="parent_id")
+    private UUID parentId;
 }
