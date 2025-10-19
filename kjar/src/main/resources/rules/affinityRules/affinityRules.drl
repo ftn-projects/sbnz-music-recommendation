@@ -5,109 +5,57 @@ import com.ftn.model.track.Track;
 import com.ftn.model.User;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.model.specification.ScoringSpecification;
+import com.ftn.model.request.SeedTrackRequest;
 import com.ftn.model.ScoreComponent;
-import com.ftn.model.RecommendationProposal;
+import com.ftn.model.track.RecommendationProposal;
 
-rule "B1 - User taste genre matching"
+rule "B1 - User taste (custom accumulate, 0 if none)" salience 10
+dialect "java"
 when
-    $scoring : ScoringSpecification(wUserTaste != null && wUserTaste > 0)
-    $candidate : TrackCandidate($userId : userId, $trackId : trackId)
-    $user : User(id == $userId, $prefs : genrePreferences)
-    $track : Track(id == $trackId, $genreId : genreIds)
-    $pref : Double() from $prefs[$genreId]
-then
-    insert(
-        new ScoreComponent(
-            $userId,
-            $trackId,
-            ScoreComponent.Source.TASTE,
-            $pref * $scoring.getWUserTaste()
-        )
-    );
-end
+    $spec  : ScoringSpecification( wUserTaste != null && wUserTaste > 0 )
+    $tc    : TrackCandidate( $uid : userId, $tid : trackId )
+    $user  : User( id == $uid, $prefs : genrePreferences )
+    eval( $prefs != null && !$prefs.isEmpty() )
+    $track : Track( id == $tid, $gids : genreIds )
 
-rule "B2 - Aggregate score components into recommendation proposal"
-when
-    $user: User($uid: id)
-    $track: Track($tid: id)
-    $spec: ScoringSpecification(
-        $wTaste: wUserTaste,
-        $wProfGenre: wProfileGenre,
-        $wProfFeat: wProfileFeatures,
-        $wSeedGenre: wSeedGenre,
-        $wSeedFeat: wSeedFeatures
+    $score : Number() from accumulate(
+        $gid : java.util.UUID() from $gids,
+        init( double best = Double.NEGATIVE_INFINITY; int cnt = 0; ),
+        action( {
+            Double p = (Double) $prefs.get($gid);
+            if (p != null) { if (p > best) best = p; cnt++; }
+        } ),
+        result( cnt == 0 ? null : best )
     )
-
-    $taste: ScoreComponent(
-        userId == $uid,
-        trackId == $tid,
-        source == ScoreComponent.Source.TASTE,
-        $sTaste: score
-    ) from ScoreComponent()
-
-    $profGenre: ScoreComponent(
-        userId == $uid,
-        trackId == $tid,
-        source == ScoreComponent.Source.PROFILE_GENRE,
-        $sProfGenre: score
-    ) from ScoreComponent()
-
-    $profFeat: ScoreComponent(
-        userId == $uid,
-        trackId == $tid,
-        source == ScoreComponent.Source.PROFILE_FEATURES,
-        $sProfFeat: score
-    ) from ScoreComponent()
-
-    $seedGenre: ScoreComponent(
-        userId == $uid,
-        trackId == $tid,
-        source == ScoreComponent.Source.SEED_GENRE,
-        $sSeedGenre: score
-    ) from ScoreComponent()
-
-    $seedFeat: ScoreComponent(
-        userId == $uid,
-        trackId == $tid,
-        source == ScoreComponent.Source.SEED_FEATURES,
-        $sSeedFeat: score
-    ) from ScoreComponent()
-
-    not RecommendationProposal(userId == $uid, trackId == $tid)
 then
-    insert( new RecommendationProposal(
-        $uid,
-        $tid,
-        $wTaste * $sTaste +
-        $wProfGenre * $sProfGenre +
-        $wProfFeat * $sProfFeat +
-        $wSeedGenre * $sSeedGenre +
-        $wSeedFeat * $sSeedFeat
-    ));
+    insert( new ScoreComponent(
+        $uid, $tid, ScoreComponent.Source.TASTE,
+        $score.doubleValue() * $spec.getWUserTaste()
+    ) );
 end
 
-rule "B4 - Seed track genre similarity scoring"
+rule "B4 - Seed track genre similarity scoring" salience 10
 when
-    $spec : ScoringSpecification(wSeedGenre != null && wSeedGenre > 0)
-    $user : User($uid : id)
-    $candidate : TrackCandidate(userId == $uid, $trackId : $tid)
-    $track : Track(id == $tid, $genreIds : genreIds)
+    $spec : ScoringSpecification( wSeedGenre != null && wSeedGenre > 0 )
+    $user : User( $uid : id )
+    $candidate : TrackCandidate( userId == $uid, $tid : trackId )
+    $track : Track( id == $tid, $genreIds : genreIds )
+    $seedReq : SeedTrackRequest( userId == $uid, $seedId : seedTrackId )
+    $seedTrack : Track( id == $seedId, $seedGenres : genreIds )
 
-    $seedReq : SeedTrackRequest(userId == $uid, $seedTrackId : $seedId)
-    $seedTrack : Track(id == $seedId, $seedGenres : genreIds)
-
+    // Count how many candidate genres are also in the seed track's genres
     $matches : Number() from accumulate(
-        $g : UUID() from $track.genreIds,
-        $match : Number() from ($seedGenres contains $g ? 1 : 0),
-        sum($match)
+        $g : java.util.UUID( this memberOf $seedGenres ) from $genreIds,
+        count($g)
     )
-
-    $similarity : Double() from ($matches.doubleValue() / ($track.genreIds.size() > 0 ? $track.genreIds.size() : 1))
 then
-    insert(new ScoreComponent(
+    double denom = ($genreIds != null && !$genreIds.isEmpty()) ? $genreIds.size() : 1.0;
+    double similarity = $matches.doubleValue() / denom;
+
+    insert( new ScoreComponent(
         $uid,
         $tid,
         ScoreComponent.Source.SEED_GENRE,
-        $similarity * $spec.getWSeedGenre()
+        similarity * $spec.getWSeedGenre()
     ));
 end

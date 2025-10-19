@@ -12,4 +12,6 @@ import lombok.EqualsAndHashCode;
 public class TrackCandidate {
     @EqualsAndHashCode.Include private UUID userId;
     @EqualsAndHashCode.Include private UUID trackId;
+    private String artist;
+    private double score;
 }

@@ -8,7 +8,7 @@ import com.ftn.model.specification.ScoringSpecification
 import com.ftn.model.User
 import com.ftn.model.track.Track
 
-rule "Create filtering and scoring specifications for profie request"
+rule "Create filtering and scoring specifications for profie request" salience 30
     when
         $r: ProfileRequest( $userId: userId )
         $u: User ( id == $userId, $preferences: preferences )
@@ -29,7 +29,7 @@ rule "Create filtering and scoring specifications for profie request"
         insert(score);
 end
 
-rule "Create filtering and scoring specifications for seed request"
+rule "Create filtering and scoring specifications for seed request" salience 30
     when
         $r: SeedTrackRequest( $userId: userId, $strackId: seedTrackId )
         $t: Track( id == $strackId, $genreIds: genreIds, $releaseYear: releaseYear )
@@ -45,11 +45,11 @@ rule "Create filtering and scoring specifications for seed request"
         );
         insert(filter);
         ScoringSpecification score = new ScoringSpecification(
-            0.0,
-            0.0,
-            0.0,
-            1.0,      
-            1.0       
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
         );
         insert(score);
 end
