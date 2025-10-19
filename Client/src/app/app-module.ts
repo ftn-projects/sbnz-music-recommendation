@@ -8,12 +8,14 @@ import { MaterialModule } from './material/material-module';
 import { LoginComponent } from './login/login';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Registration } from './registration/registration';
+import { Library } from './library/library';
 
 @NgModule({
   declarations: [
     App,
     LoginComponent,
-    Registration
+    Registration,
+    Library
   ],
   imports: [
     BrowserModule,

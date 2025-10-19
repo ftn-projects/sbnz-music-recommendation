@@ -1,0 +1,100 @@
+<div class="library-container">
+    <div class="library-content">
+        <h1>Music Library</h1>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-bar">
+                <mat-form-field appearance="outline" class="search-field">
+                    <mat-label>Search for tracks</mat-label>
+                    <input 
+                        matInput 
+                        [formControl]="searchControl" 
+                        placeholder="Search by title or artist..."
+                        (keyup.enter)="onSearchClick()">
+                    <mat-icon matPrefix>search</mat-icon>
+                    @if (searchControl.value) {
+                        <button matSuffix mat-icon-button (click)="searchControl.setValue(''); searchResults.set([])">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                    }
+                </mat-form-field>
+                <button mat-raised-button color="primary" (click)="onSearchClick()" class="search-button">
+                    Search
+                </button>
+            </div>
+
+            <!-- Search Results -->
+            @if (searchResults().length > 0) {
+                <div class="search-results">
+                    <h3>Search Results</h3>
+                    <div class="track-list">
+                        @for (track of searchResults(); track track.id) {
+                            <div class="track-card">
+                                <div class="track-main">
+                                    <h4>{{ track.title }}</h4>
+                                    <p>{{ track.artist }}</p>
+                                </div>
+                                <div class="track-details">
+                                    @if (track.releaseYear) {
+                                        <span class="year">{{ track.releaseYear }}</span>
+                                    }
+                                    @if (track.duration) {
+                                        <span class="duration">{{ formatDuration(track.duration) }}</span>
+                                    }
+                                </div>
+                                <div class="track-actions">
+                                    @if (isInLibrary(track.id!)) {
+                                        <button mat-icon-button color="primary" disabled>
+                                            <mat-icon>check</mat-icon>
+                                        </button>
+                                    } @else {
+                                        <button mat-icon-button color="primary" (click)="addToLibrary(track)">
+                                            <mat-icon>add</mat-icon>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- My Library Section -->
+        <div class="my-library-section">
+            <h3>My Library</h3>
+            @if (library().length === 0) {
+                <div class="empty-state">
+                    <mat-icon>library_music</mat-icon>
+                    <p>Your library is empty</p>
+                    <p class="subtitle">Search and add tracks to build your collection</p>
+                </div>
+            } @else {
+                <div class="track-list">
+                    @for (track of library(); track track.id) {
+                        <div class="track-card">
+                            <div class="track-main">
+                                <h4>{{ track.title }}</h4>
+                                <p>{{ track.artist }}</p>
+                            </div>
+                            <div class="track-details">
+                                @if (track.releaseYear) {
+                                    <span class="year">{{ track.releaseYear }}</span>
+                                }
+                                @if (track.duration) {
+                                    <span class="duration">{{ formatDuration(track.duration) }}</span>
+                                }
+                            </div>
+                            <div class="track-actions">
+                                <button mat-icon-button color="warn" (click)="removeFromLibrary(track.id!)">
+                                    <mat-icon>delete</mat-icon>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

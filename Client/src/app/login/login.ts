@@ -13,7 +13,7 @@ import { SnackService } from '../services/snack.service';
 })
 export class LoginComponent {
   loginFormGroup = new FormGroup({
-    username: new FormControl('', [Validators.required])
+  username: new FormControl('', [Validators.required])
   });
 
   constructor(
