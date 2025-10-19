@@ -1,0 +1,28 @@
+<mat-toolbar color="primary" class="navbar">
+    <div class="navbar-content">
+        <div class="brand">
+            <mat-icon>music_note</mat-icon>
+            <span>Music Recommender</span>
+        </div>
+
+        <nav class="nav-links">
+            @if (isAuthPage()) {
+                <!-- Show on Login/Registration pages -->
+                @if (isLoginPage()) {
+                    <a mat-button routerLink="/registration">Register</a>
+                }
+                @if (isRegistrationPage()) {
+                    <a mat-button routerLink="/login">Login</a>
+                }
+            } @else {
+                <!-- Show on other pages -->
+                <a mat-button routerLink="/library" routerLinkActive="active">Library</a>
+                <a mat-button routerLink="/recommendation" routerLinkActive="active">Recommendations</a>
+                <button mat-button (click)="logout()">
+                    <mat-icon>logout</mat-icon>
+                    Logout
+                </button>
+            }
+        </nav>
+    </div>
+</mat-toolbar>

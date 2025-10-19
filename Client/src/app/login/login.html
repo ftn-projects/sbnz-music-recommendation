@@ -1,0 +1,18 @@
+<div class="login-container">
+    
+    <form class="login-form" [formGroup]="loginFormGroup" (ngSubmit)="login()">
+        <h2>Welcome back, sign in</h2>
+        <div class="fields-container">
+        <mat-form-field hideRequiredMarker="hideRequiredMarker()" appearance="outline">
+            <mat-label>Username</mat-label>
+            <input matInput formControlName="username">
+        </mat-form-field>
+        </div>
+
+    <button class="submit-button" mat-flat-button color="primary" type="submit">Login</button>
+
+    <p>
+        Don't have an account? <a [routerLink]="'/registration'">Sign up!</a>
+    </p>
+    </form>
+  </div>
