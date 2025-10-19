@@ -9,13 +9,15 @@ import { LoginComponent } from './login/login';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Registration } from './registration/registration';
 import { Library } from './library/library';
+import { Recommendation } from './recommendation/recommendation';
 
 @NgModule({
   declarations: [
     App,
     LoginComponent,
     Registration,
-    Library
+    Library,
+    Recommendation
   ],
   imports: [
     BrowserModule,

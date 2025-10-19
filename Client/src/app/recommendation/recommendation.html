@@ -1,0 +1,114 @@
+<div class="recommendation-container">
+    <div class="recommendation-content">
+        <h1>Music Recommendations</h1>
+
+        <!-- Preferences Section -->
+        <div class="preferences-section">
+            <h3>Preferences</h3>
+            <form [formGroup]="preferencesForm">
+                <div class="preferences-grid">
+                    <!-- Profile Selection -->
+                    <div class="preference-item full-width">
+                        <mat-form-field appearance="outline" class="full-width">
+                            <mat-label>Select Profile (Optional)</mat-label>
+                            <mat-select formControlName="selectedProfile">
+                                <mat-option [value]="null">None</mat-option>
+                                @for (profile of profiles(); track profile.id) {
+                                    <mat-option [value]="profile.id">{{ profile.name }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Checkboxes -->
+                    <div class="preference-item">
+                        <mat-checkbox formControlName="includeExplicit" color="primary">
+                            Include explicit tracks
+                        </mat-checkbox>
+                    </div>
+
+                    <div class="preference-item">
+                        <mat-checkbox formControlName="includeLibraryTracks" color="primary">
+                            Include library tracks
+                        </mat-checkbox>
+                    </div>
+
+                    <div class="preference-item">
+                        <mat-checkbox formControlName="includeRecentTracks" color="primary">
+                            Include recent tracks
+                        </mat-checkbox>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button 
+                        mat-raised-button 
+                        color="primary" 
+                        (click)="getRecommendations()"
+                        [disabled]="isLoading()">
+                        @if (isLoading()) {
+                            <mat-spinner diameter="20"></mat-spinner>
+                            <span>Loading...</span>
+                        } @else {
+                            Get Recommendations
+                        }
+                    </button>
+
+                    @if (recommendations().length > 0) {
+                        <button 
+                            mat-stroked-button 
+                            (click)="clearRecommendations()">
+                            Clear Results
+                        </button>
+                    }
+                </div>
+            </form>
+        </div>
+
+        <!-- Recommendations Section -->
+        @if (recommendations().length > 0) {
+            <div class="recommendations-section">
+                <h3>Recommended for You</h3>
+                <div class="track-list">
+                    @for (track of recommendations(); track track.id) {
+                        <div class="track-card">
+                            <div class="track-main">
+                                <h4>{{ track.title }}</h4>
+                                <p>{{ track.artist }}</p>
+                            </div>
+                            <div class="track-details">
+                                @if (track.releaseYear) {
+                                    <span class="year">{{ track.releaseYear }}</span>
+                                }
+                                @if (track.duration) {
+                                    <span class="duration">{{ formatDuration(track.duration) }}</span>
+                                }
+                                @if (track.explicit) {
+                                    <span class="explicit-badge">E</span>
+                                }
+                            </div>
+                            <div class="track-actions">
+                                @if (isInLibrary(track.id!)) {
+                                    <button mat-icon-button color="warn" (click)="removeFromLibrary(track.id!)">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                } @else {
+                                    <button mat-icon-button color="primary" (click)="addToLibrary(track)">
+                                        <mat-icon>add</mat-icon>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        } @else if (!isLoading()) {
+            <div class="empty-state">
+                <mat-icon>recommend</mat-icon>
+                <p>No recommendations yet</p>
+                <p class="subtitle">Set your preferences and click "Get Recommendations" to discover new music</p>
+            </div>
+        }
+    </div>
+</div>
