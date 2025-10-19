@@ -1,0 +1,33 @@
+<div class="registration-container">
+    
+    <form class="registration-form" [formGroup]="registrationFormGroup" (ngSubmit)="register()">
+        <h2>Create your account</h2>
+        <div class="fields-container">
+            <mat-form-field hideRequiredMarker appearance="outline">
+                <mat-label>Name</mat-label>
+                <input matInput formControlName="name">
+            </mat-form-field>
+
+            <mat-form-field hideRequiredMarker appearance="outline">
+                <mat-label>Surname</mat-label>
+                <input matInput formControlName="surname">
+            </mat-form-field>
+
+            <mat-form-field hideRequiredMarker appearance="outline">
+                <mat-label>Username</mat-label>
+                <input matInput formControlName="username">
+            </mat-form-field>
+
+            <mat-form-field hideRequiredMarker appearance="outline">
+                <mat-label>Age</mat-label>
+                <input matInput type="number" formControlName="age" min="1" max="120">
+            </mat-form-field>
+        </div>
+
+        <button class="submit-button" mat-flat-button color="primary" type="submit">Register</button>
+
+        <p>
+            Already have an account? <a [routerLink]="'/login'">Sign in!</a>
+        </p>
+    </form>
+</div>
