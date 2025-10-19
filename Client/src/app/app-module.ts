@@ -11,6 +11,7 @@ import { Registration } from './registration/registration';
 import { Library } from './library/library';
 import { Recommendation } from './recommendation/recommendation';
 import { Navbar } from './navbar/navbar';
+import { MusicPlayer } from './music-player/music-player';
 
 @NgModule({
   declarations: [
@@ -19,7 +20,8 @@ import { Navbar } from './navbar/navbar';
     Registration,
     Library,
     Recommendation,
-    Navbar
+    Navbar,
+    MusicPlayer
   ],
   imports: [
     BrowserModule,

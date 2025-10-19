@@ -1,0 +1,247 @@
+.music-player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background-color: #fff;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+}
+
+.player-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    gap: 2rem;
+}
+
+.track-info {
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.track-details {
+    min-width: 0;
+
+    h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    p {
+        margin: 0.25rem 0 0 0;
+        color: #6a6a6a;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.player-controls {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 600px;
+}
+
+.control-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    button {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        mat-icon {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        &.play-button {
+            width: 48px;
+            height: 48px;
+
+            mat-icon {
+                font-size: 48px;
+                width: 48px;
+                height: 48px;
+                line-height: 48px;
+            }
+        }
+    }
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+
+    .time-current,
+    .time-duration {
+        font-size: 0.75rem;
+        color: #6a6a6a;
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 4px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: transparent;
+        cursor: pointer;
+
+        &::-webkit-slider-runnable-track {
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3f51b5;
+            cursor: pointer;
+            margin-top: -4px;
+        }
+
+        &::-moz-range-track {
+            height: 4px;
+            background: #ddd;
+            border-radius: 2px;
+        }
+
+        &::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #3f51b5;
+            cursor: pointer;
+            border: none;
+        }
+
+        &:hover::-webkit-slider-thumb {
+            background: #303f9f;
+        }
+
+        &:hover::-moz-range-thumb {
+            background: #303f9f;
+        }
+    }
+}
+
+.player-actions {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    min-width: 100px;
+    max-width: 200px;
+
+    button {
+        width: 40px;
+        height: 40px;
+
+        mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .music-player {
+        height: 80px;
+    }
+
+    .player-content {
+        padding: 0 1rem;
+        gap: 1rem;
+    }
+
+    .track-info {
+        min-width: 120px;
+        max-width: 150px;
+    }
+
+    .track-details {
+        h4 {
+            font-size: 0.85rem;
+        }
+
+        p {
+            font-size: 0.75rem;
+        }
+    }
+
+    .player-controls {
+        gap: 0.25rem;
+    }
+
+    .control-buttons {
+        gap: 0.25rem;
+
+        button {
+            width: 36px;
+            height: 36px;
+
+            mat-icon {
+                font-size: 20px;
+                width: 20px;
+                height: 20px;
+            }
+
+            &.play-button {
+                width: 40px;
+                height: 40px;
+
+                mat-icon {
+                    font-size: 40px;
+                    width: 40px;
+                    height: 40px;
+                }
+            }
+        }
+    }
+
+    .progress-container {
+        gap: 0.5rem;
+
+        .time-current,
+        .time-duration {
+            font-size: 0.7rem;
+            min-width: 35px;
+        }
+    }
+}

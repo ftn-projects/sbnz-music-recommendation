@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { UserService } from '../services/user.service';
+import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
 import { Profile } from '../models/profile.model';
 
@@ -12,6 +13,7 @@ import { Profile } from '../models/profile.model';
 })
 export class Recommendation {
   private readonly userService = inject(UserService);
+  private readonly musicPlayerService = inject(MusicPlayerService);
 
   readonly recommendations = signal<Track[]>([]);
   readonly isLoading = signal(false);
@@ -91,5 +93,9 @@ export class Recommendation {
 
   clearRecommendations(): void {
     this.recommendations.set([]);
+  }
+
+  playTrack(track: Track): void {
+    this.musicPlayerService.playTrack(track);
   }
 }
