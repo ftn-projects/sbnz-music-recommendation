@@ -1,11 +1,9 @@
 package com.ftn.service;
 
 import com.ftn.mapper.ProfileMapper;
-import com.ftn.model.Profile;
-import com.ftn.model.User;
+import com.ftn.model.*;
 import com.ftn.model.request.ProfileRequest;
 import com.ftn.model.request.SeedTrackRequest;
-import com.ftn.model.track.RecommendationProposal;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.mapper.UserMapper;
 import com.ftn.mapper.TrackMapper;
@@ -14,7 +12,6 @@ import com.ftn.repository.TrackRepository;
 import com.ftn.repository.UserRepository;
 import com.ftn.util.Page;
 import org.kie.api.KieBase;
-import org.kie.api.runtime.StatelessKieSession;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,6 +36,8 @@ public class RecommendationService {
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
     private final TrackRepository trackRepository;
+    private final UserActivityService userActivityService;
+    private final ProfileAlignmentService profileAlignmentService;
     private final ProfileMapper profileMapper;
     private final UserMapper userMapper;
     private final TrackMapper trackMapper;
@@ -60,6 +59,8 @@ public class RecommendationService {
             ProfileRepository profileRepository,
             UserRepository userRepository,
             TrackRepository trackRepository,
+            UserActivityService userActivityService,
+            ProfileAlignmentService profileAlignmentService,
             ProfileMapper profileMapper,
             UserMapper userMapper,
             TrackMapper trackMapper) {
@@ -68,6 +69,8 @@ public class RecommendationService {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
         this.trackRepository = trackRepository;
+        this.userActivityService = userActivityService;
+        this.profileAlignmentService = profileAlignmentService;
         this.profileMapper = profileMapper;
         this.userMapper = userMapper;
         this.trackMapper = trackMapper;
@@ -90,16 +93,16 @@ public class RecommendationService {
 
     public List<UUID> recommendForProfile(UUID userId, UUID profileId) {
         LOG.info("Starting profile-based recommendation: user={}, profile={}", userId, profileId);
-        // Load user and profile
-        var user = userMapper.toUser(
-                userRepository.findById(userId)
-                        .orElseThrow(() -> new NoSuchElementException("User not found: " + userId))
-        );
-
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
         var profile = profileMapper.toProfile(
                 profileRepository.findById(profileId)
                         .orElseThrow(() -> new NoSuchElementException("Profile not found: " + profileId))
         );
+
+        // Compute aligned genres via backwards chaining BEFORE starting forward chaining
+        profileAlignmentService.computeAlignedGenres(profile);
+        LOG.info("Profile '{}' aligned genres computed: {} genres", profile.getName(), profile.getAlignedGenres().size());
 
         // Create ProfileRequest
         var profileRequest = new ProfileRequest(
@@ -113,11 +116,8 @@ public class RecommendationService {
 
     public List<UUID> recommendForTrack(UUID userId, UUID seedTrackId, Integer yearDeltaMax) {
         LOG.info("Starting seed-track recommendation: user={}, seedTrack={}, yearDeltaMax={}", userId, seedTrackId, yearDeltaMax);
-        // Load user
-        var user = userMapper.toUser(
-                userRepository.findById(userId)
-                        .orElseThrow(() -> new NoSuchElementException("User not found: " + userId))
-        );
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
 
         // Create SeedTrackRequest
         var seedRequest = new SeedTrackRequest(
@@ -131,25 +131,30 @@ public class RecommendationService {
     }
 
     private List<UUID> runBatchRecommendation(
-            User user,
+            UserEntity userEntity,
             Profile profile,
             ProfileRequest profileRequest,
             SeedTrackRequest seedRequest) {
-
         var total = trackRepository.getTotal();
         var pages = planPages(total, batchSize);
 
         LOG.info("Planned recommendation run: totalTracks={}, batchSize={}, pages={}", total, batchSize, pages.size());
 
+        var context = new RequestContext(
+                userEntity.getLibraryTrackIds(),
+                userActivityService.getRecentTrackIds(userEntity.getId())
+        );
+
+        var user = userMapper.toUser(userEntity);
         var futures = pages.stream()
-                .map(p -> CompletableFuture.supplyAsync(() -> processPage(user, profile, profileRequest, seedRequest, p), pool))
+                .map(page -> CompletableFuture.supplyAsync(() ->
+                        processPage(user, profile, profileRequest, seedRequest, context, page), pool))
                 .collect(Collectors.toList());
 
         // Combine all results from all batches
         var allScoredTracks = new ArrayList<TrackCandidate>();
         for (var future : futures) {
             var batchResults = future.join();
-            // batchResults from processPage are TrackCandidate
             allScoredTracks.addAll(batchResults);
         }
 
@@ -164,12 +169,12 @@ public class RecommendationService {
     }
 
     private List<TrackCandidate> processPage(
-            com.ftn.model.User user,
+            User user,
             Profile profile,
             ProfileRequest profileRequest,
             SeedTrackRequest seedRequest,
+            RequestContext context,
             Page page) {
-
         LOG.debug("Processing page offset={}, limit={}", page.getOffset(), page.getLimit());
 
         var trackEntities = trackRepository.findAllPaginated(page.getOffset(), page.getLimit());
@@ -180,8 +185,7 @@ public class RecommendationService {
 
         // Map entities to domain models
         var tracks = trackMapper.toTrackList(trackEntities);
-
-        StatelessKieSession session = kieBase.newStatelessKieSession();
+        var session = kieBase.newStatelessKieSession();
 
         // Attach debug event listener when requested - this will log each rule fired
         if (debugRules) {
@@ -198,6 +202,7 @@ public class RecommendationService {
         // Build facts for Drools session
         var facts = new ArrayList<>();
         facts.add(user);
+        facts.add(context);
 
         // Add request and profile (if profile-based recommendation)
         if (profileRequest != null) {
@@ -227,11 +232,11 @@ public class RecommendationService {
             LOG.error("Error executing Drools session for page offset={}, limit={}: {}", page.getOffset(), page.getLimit(), e.getMessage(), e);
         }
 
-        long beforeFilter = trackCandidates.size();
+        var beforeFilter = trackCandidates.size();
         var filtered = trackCandidates.stream()
                 .filter(candidate -> candidate.getScore() > 0)
                 .collect(Collectors.toList());
-        long afterFilter = filtered.size();
+        var afterFilter = filtered.size();
         LOG.debug("Page processed offset={}, limit={}, candidatesBefore={}, candidatesAfter={}", page.getOffset(), page.getLimit(), beforeFilter, afterFilter);
 
         // Return only the candidates that weren't filtered out and have scores
@@ -239,11 +244,11 @@ public class RecommendationService {
     }
 
     private List<Page> planPages(long total, int batchSize) {
-        List<Page> out = new ArrayList<>();
+        var out = new ArrayList<Page>();
         if (total <= 0 || batchSize <= 0) return out;
 
         for (long off = 0; off < total; off += batchSize) {
-            int lim = (int) Math.min(batchSize, total - off); // last page can be smaller
+            var lim = (int) Math.min(batchSize, total - off); // last page can be smaller
             out.add(new Page(off, lim));
         }
         return out;

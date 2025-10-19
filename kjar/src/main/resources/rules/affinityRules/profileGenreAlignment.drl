@@ -1,0 +1,47 @@
+package rules.affinityRules
+
+import com.ftn.model.Profile
+import com.ftn.model.User
+import com.ftn.model.track.Track
+import com.ftn.model.track.TrackCandidate
+import com.ftn.model.ScoreComponent
+import com.ftn.util.Scoring
+
+/**
+ * B2: Profile-Genre Alignment Affinity Rule
+ *
+ * Uses backwards chaining results (Profile.alignedGenres) to give bonus/penalty
+ * based on whether the candidate track's genres match the profile's characteristic-based genre groups.
+ *
+ * Bonus: Track genres overlap with profile's aligned genres
+ * Penalty: Track genres don't match profile's aligned genres
+ */
+
+rule "B2 - Profile Genre Alignment Affinity"
+    when
+        $user : User($userId : id)
+        $profile : Profile($alignedGenres : alignedGenres != null && !alignedGenres.isEmpty())
+        $track : Track($trackId : id, $trackGenres : genreIds)
+        $candidate : TrackCandidate(userId == $userId, trackId == $trackId)
+
+        // Calculate genre overlap (Jaccard similarity)
+        $distance : Double() from Scoring.distance($trackGenres, $alignedGenres)
+    then
+        // Convert distance to similarity: similarity = 1 - distance
+        double similarity = 1.0 - $distance;
+
+        // Apply score adjustment based on alignment
+        // similarity=1.0 (perfect match) -> +2.0 bonus
+        // similarity=0.5 (some overlap) -> +1.0 bonus
+        // similarity=0.0 (no match) -> 0.0 (neutral)
+        double scoreAdjustment = similarity * 2.0;
+
+        ScoreComponent component = new ScoreComponent(
+            $userId,
+            $trackId,
+            ScoreComponent.Source.PROFILE_GENRE,
+            scoreAdjustment
+        );
+
+        insert(component);
+end

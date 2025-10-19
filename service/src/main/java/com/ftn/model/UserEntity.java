@@ -6,9 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.Map;
-import java.util.UUID;
-import java.util.HashMap;
+import java.util.*;
 
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -20,14 +18,23 @@ public class UserEntity {
     @EqualsAndHashCode.Include
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id = UUID.randomUUID();
+
     private String name;
     private Integer age;
 
+    @ElementCollection
+    @CollectionTable(
+            name = "user_library_tracks",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "track_id")
+    private Set<UUID> libraryTrackIds;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
-        name = "user_genre_preferences",
-        joinColumns = @JoinColumn(name = "user_id"),
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "genre_id"})
+            name = "user_genre_preferences",
+            joinColumns = @JoinColumn(name = "user_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "genre_id"})
     )
     @MapKeyColumn(name = "genre_id")
     @Column(name = "preference")
@@ -50,6 +57,7 @@ public class UserEntity {
         this.name = name;
         this.age = age;
         this.genrePreferences = new HashMap<>();
+        this.libraryTrackIds = new HashSet<>();
         this.preferences = preferences;
     }
 }

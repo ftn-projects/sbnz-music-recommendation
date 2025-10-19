@@ -1,8 +1,5 @@
 package rules.cep;
 
-declare entry-point "music-events"
-end
-
 import java.util.UUID;
 import java.time.Instant;
 import com.ftn.model.event.ListenEvent;

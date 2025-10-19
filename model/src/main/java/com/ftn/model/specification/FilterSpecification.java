@@ -1,6 +1,6 @@
 package com.ftn.model.specification;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import lombok.AllArgsConstructor;
@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class FilterSpecification {
     private Boolean allowExplicit;
-    private List<UUID> forbiddenTrackIds;
-    private List<UUID> contextGenreIds;
+    private Set<UUID> forbiddenTrackIds;
+    private Set<UUID> contextGenreIds;
     private Integer contextReleaseYear;
     private Double contextGenreMaxDifference;
     private Integer yearDeltaMax;

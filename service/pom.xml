@@ -38,7 +38,7 @@
 
 		<dependency>
 			<groupId>com.ftn.sbnz</groupId>
-			<artifactId>music-kjar</artifactId>
+			<artifactId>kjar</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 

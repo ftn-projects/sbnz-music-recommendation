@@ -1,11 +1,12 @@
 package com.ftn.repository;
 
-import com.ftn.model.ProfileEntity;
+import com.ftn.model.TraitEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
 
 @Repository
-public interface ProfileRepository extends JpaRepository<ProfileEntity, UUID> {
+public interface TraitRepository extends JpaRepository<TraitEntity, UUID> {
 }
+

@@ -1,10 +1,11 @@
 package com.ftn.model.track;
 
+import com.ftn.model.AudioFeatures;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -15,32 +16,8 @@ public class Track {
     private String title;
     private String artist;
     private Integer releaseYear;
-    private List<UUID> genreIds;
-    private Features features;
+    private Set<UUID> genreIds;
+    private AudioFeatures features;
     private Boolean explicit;
     private Integer duration;
-
-    @Data
-    @AllArgsConstructor
-    public static class Features {
-        private Double danceability;
-        private Double energy;
-        private Double speechiness;
-        private Double acousticness;
-        private Double instrumentalness;
-        private Double liveness;
-        private Double valence;
-
-        @Override
-        public String toString() {
-            return "Track.Features ["
-                + "danceability=" + danceability
-                + ", energy=" + energy
-                + ", speechiness=" + speechiness
-                + ", acousticness=" + acousticness
-                + ", instrumentalness=" + instrumentalness
-                + ", liveness=" + liveness
-                + ", valence=" + valence + ']';
-        }
-    }
 }

@@ -1,0 +1,78 @@
+package rules.profileBackwards
+
+import com.ftn.model.Profile
+import com.ftn.model.Trait
+import com.ftn.model.Genre
+
+/**
+ * Backwards chaining for profile-genre alignment with TRAIT HIERARCHY.
+ *
+ * Recursive chain through traits (NOT genres):
+ * Profile → has trait → Trait → inherits from parent trait → Parent Trait → groups genres → Genre
+ *
+ * Example:
+ * - Profile "Gym" has trait "High Energy"
+ * - "High Energy" is child of "Physical Activity"
+ * - "Physical Activity" groups [Rock, EDM, Hip-Hop]
+ * - Therefore "Gym" profile aligns with those genres through trait inheritance
+ */
+
+/**
+ * RECURSIVE Query: Does profile have this trait (directly or through trait hierarchy)?
+ *
+ * A profile has a trait if:
+ * 1. Profile directly has this trait in its traitIds, OR
+ * 2. Profile has a parent trait (inherits down), OR
+ * 3. Profile has a child trait (specific implies general)
+ */
+query profileHasTrait(Profile $profile, Trait $trait)
+    // Base case: Profile directly has this trait
+    Profile(this == $profile, traitIds contains $trait.id)
+    or
+    // Recursive case 1: Profile has parent trait (inherits down)
+    (
+        Trait(this == $trait, $parentId : parentId != null)
+        and
+        $parent : Trait(id == $parentId)
+        and
+        profileHasTrait($profile, $parent;)
+    )
+    or
+    // Recursive case 2: Profile has child trait (specific implies general)
+    (
+        Trait(this == $trait, $traitId : id)
+        and
+        $child : Trait(parentId == $traitId)
+        and
+        profileHasTrait($profile, $child;)
+    )
+end
+
+/**
+ * Main query: Does this genre align with this profile through trait hierarchy?
+ * Uses the recursive profileHasTrait query.
+ */
+query genreAlignsWithProfile(Profile $profile, Genre $genre)
+    Genre(this == $genre, $genreId : id)
+    and
+    $trait : Trait(genreIds contains $genreId)
+    and
+    profileHasTrait($profile, $trait;)
+end
+
+/**
+ * Query: Get alignment strength (count of traits connecting profile to genre).
+ * Higher count = stronger alignment.
+ */
+query profileGenreAlignmentStrength(Profile $profile, Genre $genre, Number $count)
+    Genre(this == $genre, $genreId : id)
+    and
+    accumulate(
+        $trait : Trait(genreIds contains $genreId)
+        and
+        profileHasTrait($profile, $trait;),
+        $strength : count($trait)
+    )
+    and
+    eval($count == $strength)
+end

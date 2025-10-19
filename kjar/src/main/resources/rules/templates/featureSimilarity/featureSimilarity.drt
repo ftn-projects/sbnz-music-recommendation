@@ -8,14 +8,15 @@ import com.ftn.model.*;
 
 template "B5 - Seed track audio feature similarity @{featureName}"
 rule "b5_@{featureName}_score"
+salience 10
 when
     $spec : ScoringSpecification(wSeedFeatures != null && wSeedFeatures > 0)
 
     $user : User($uid : id)
-    $candidate : TrackCandidate(userId == $uid, $trackId : $tid)
+    $candidate : TrackCandidate(userId == $uid, $tid : trackId)
     $track : Track(id == $tid, features != null, $trackVal : features.@{featureGetter}())
 
-    $seedReq : SeedTrackRequest(userId == $uid, $seedTrackId : $seedId)
+    $seedReq : SeedTrackRequest(userId == $uid, $seedId : seedTrackId)
     $seedTrack : Track(id == $seedId, features != null, $seedVal : features.@{featureGetter}())
 
     $similarity : Double() from (1.0 - Math.abs($trackVal - $seedVal))

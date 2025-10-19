@@ -8,15 +8,14 @@ import com.ftn.model.*;
 
 template "B3 - Profile feature scoring @{featureName}"
 rule "b3_@{featureName}_score"
-salience 80
+salience 10
 when
     $spec : ScoringSpecification(wProfileFeatures != null && wProfileFeatures > 0)
     $user : User($uid : id)
     $track : Track($tid : id, features != null, $trackVal : features.@{featureGetter}())
     $profileReq : ProfileRequest(userId == $uid, $pid : profileId)
-    $profile : Profile(id == $pid)
-    $profileFeatures : Track.Features() from $profile.getFeatures()
-    $profileVal : Double() from $profileFeatures.@{featureGetter}()
+    $profile : Profile(id == $pid, targetFeatures != null)
+    $profileVal : Double() from $profile.getTargetFeatures().@{featureGetter}()
 
     $similarity : Double() from (1.0 - Math.abs($trackVal - $profileVal))
 then

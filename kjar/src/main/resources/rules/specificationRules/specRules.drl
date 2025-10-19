@@ -1,23 +1,36 @@
 package rules.specificationRules
 
-import java.util.List
-import com.ftn.model.request.ProfileRequest
-import com.ftn.model.request.SeedTrackRequest
-import com.ftn.model.specification.FilterSpecification
-import com.ftn.model.specification.ScoringSpecification
-import com.ftn.model.User
-import com.ftn.model.track.Track
+import java.util.List;
+import com.ftn.model.RequestContext;
+import com.ftn.model.request.ProfileRequest;
+import com.ftn.model.request.SeedTrackRequest;
+import com.ftn.model.specification.FilterSpecification;
+import com.ftn.model.specification.ScoringSpecification;
+import com.ftn.model.User;
+import com.ftn.model.track.Track;
+import java.util.Set;
+import java.util.HashSet;
 
 rule "Create filtering and scoring specifications for profie request" salience 30
     when
         $r: ProfileRequest( $userId: userId )
         $u: User ( id == $userId, $preferences: preferences )
+        $ctx: RequestContext( $libraryTrackIds: libraryTrackIds, $recentTrackIds: recentTrackIds )
     then
-        FilterSpecification filter = new FilterSpecification();
-        filter.setAllowExplicit($preferences.getExplicitContent());
-        filter.setContextGenreIds(null);
-        filter.setContextReleaseYear(null);
-        filter.setYearDeltaMax(null);
+        FilterSpecification filter = new FilterSpecification(
+                $preferences.getExplicitContent(),
+                new HashSet<>(),
+                new HashSet<>(),
+                null,
+                null,
+                null
+        );
+        if (!$preferences.getIncludeOwned()) {
+            filter.getForbiddenTrackIds().addAll($libraryTrackIds);
+        }
+        if (!$preferences.getIncludeRecent()) {
+            filter.getForbiddenTrackIds().addAll($recentTrackIds);
+        }
         insert(filter);
         ScoringSpecification score = new ScoringSpecification(
             1.0,
@@ -34,15 +47,23 @@ rule "Create filtering and scoring specifications for seed request" salience 30
         $r: SeedTrackRequest( $userId: userId, $strackId: seedTrackId )
         $t: Track( id == $strackId, $genreIds: genreIds, $releaseYear: releaseYear )
         $u: User( id == $userId, $preferences: preferences )
+        $ctx: RequestContext( $libraryTrackIds: libraryTrackIds, $recentTrackIds: recentTrackIds )
     then
         FilterSpecification filter = new FilterSpecification(
             $preferences.getExplicitContent(),
-            List.of($strackId),
+            new HashSet<>(),
             $genreIds,
             $releaseYear,
             0.8,
             5
         );
+        filter.getForbiddenTrackIds().add($strackId);
+        if (!$preferences.getIncludeOwned()) {
+            filter.getForbiddenTrackIds().addAll($libraryTrackIds);
+        }
+        if (!$preferences.getIncludeRecent()) {
+            filter.getForbiddenTrackIds().addAll($recentTrackIds);
+        }
         insert(filter);
         ScoringSpecification score = new ScoringSpecification(
             1.0,

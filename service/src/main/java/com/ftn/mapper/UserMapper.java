@@ -7,8 +7,6 @@ import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
-
     User toUser(UserEntity entity);
 
     User.Preferences toUserPreferences(UserEntity.Preferences entityPreferences);

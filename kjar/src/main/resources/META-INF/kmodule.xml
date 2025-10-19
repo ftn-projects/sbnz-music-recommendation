@@ -1,6 +1,6 @@
 <kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <!-- Classic rules (covers filterRules + specificationRules) -->
+    <!-- Classic rules (covers filterRules + specificationRules + affinityRules + aggregationRules) -->
     <kbase name="appRulesKBase" packages="rules.filterRules, rules.specificationRules, rules.affinityRules, rules.aggregationRules" default="true">
         <ksession name="appKsession" type="stateful"/>
     </kbase>
@@ -11,7 +11,7 @@
     </kbase>
 
     <!-- Backwards rules -->
-    <kbase name="backwardsKBase" packages="rules.genreBackwards">
+    <kbase name="backwardsKBase" packages="rules.genreBackwards, rules.profileBackwards">
         <ksession name="backwardsKsession" type="stateful" />
     </kbase>
 

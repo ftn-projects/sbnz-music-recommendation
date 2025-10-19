@@ -17,6 +17,12 @@ INSERT INTO genres (id, name) VALUES
 ('10000000-0000-0000-0000-000000000009', 'Metal'),
 ('10000000-0000-0000-0000-000000000010', 'Indie');
 
+-- Insert sample profiles with target audio features
+INSERT INTO profiles (id, name, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
+('30000000-0000-0000-0000-000000000001', 'High Energy Rock', 0.6, 0.85, 0.05, 0.2, 0.1, 0.15, 0.7),
+('30000000-0000-0000-0000-000000000002', 'Chill Vibes', 0.5, 0.4, 0.04, 0.7, 0.5, 0.1, 0.6),
+('30000000-0000-0000-0000-000000000003', 'Dance Party', 0.85, 0.8, 0.08, 0.15, 0.0, 0.2, 0.9);
+
 -- Dimitrije Gasic
 -- Insert user genre preferences (missing genres are interpreted as 0)
 INSERT INTO user_genre_preferences (user_id, genre_id, preference) VALUES

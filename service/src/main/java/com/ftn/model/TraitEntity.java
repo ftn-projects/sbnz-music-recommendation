@@ -8,26 +8,27 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Represents a characteristic/trait that groups genres.
+ * Traits can have parent-child relationships for hierarchical inheritance.
+ */
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "tracks")
-public class TrackEntity {
+@Table(name = "traits")
+public class TraitEntity {
     @Id
     @EqualsAndHashCode.Include
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id = UUID.randomUUID();
-    private String title;
-    private String artist;
-    private Integer releaseYear;
-    private Boolean explicit;
-    private Integer duration;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "track_genres", joinColumns = @JoinColumn(name = "track_id"))
+    private String name;
+
+    @Column(name = "parent_id")
+    private UUID parentId;  // Parent trait for hierarchy
+
+    @ElementCollection
+    @CollectionTable(name = "trait_genres", joinColumns = @JoinColumn(name = "trait_id"))
     @Column(name = "genre_id")
     private Set<UUID> genreIds = new HashSet<>();
-
-    @Embedded
-    private AudioFeaturesEntity features;
 }
