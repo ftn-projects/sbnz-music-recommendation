@@ -1,9 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { UserService } from '../services/user.service';
 import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
 import { Profile } from '../models/profile.model';
+import { ProfileService } from '../services/profile.service';
+import { RecommendationsService } from '../services/recommendations.service';
 
 @Component({
   selector: 'app-recommendation',
@@ -11,35 +13,28 @@ import { Profile } from '../models/profile.model';
   templateUrl: './recommendation.html',
   styleUrl: './recommendation.scss'
 })
-export class Recommendation {
+export class Recommendation implements OnInit {
+  ngOnInit(): void {
+    this.loadProfiles();
+    this.loadPreferences();
+    this.setupPreferenceListeners();
+    this.getRecommendationsByCurrentTrack();
+  }
   private readonly userService = inject(UserService);
+  private readonly profileService = inject(ProfileService);
   private readonly musicPlayerService = inject(MusicPlayerService);
+  private readonly recommendationService = inject(RecommendationsService);
 
   readonly recommendations = signal<Track[]>([]);
   readonly isLoading = signal(false);
-  readonly profiles = signal<Profile[]>([
-    { id: '1', name: 'Rock Lover' },
-    { id: '2', name: 'Pop Enthusiast' },
-    { id: '3', name: 'Jazz Aficionado' },
-    { id: '4', name: 'Classical Connoisseur' },
-    { id: '5', name: 'Hip Hop Head' }
-  ]);
+  readonly profiles = signal<Profile[]>([]);
 
   readonly preferencesForm = new FormGroup({
     includeExplicit: new FormControl(false),
     includeLibraryTracks: new FormControl(false),
     includeRecentTracks: new FormControl(false),
-    selectedProfile: new FormControl<string | null>(null)
+    selectedProfile: new FormControl('')
   });
-
-  // Mock recommended tracks
-  private mockRecommendations: Track[] = [
-    { id: '10', title: 'Comfortably Numb', artist: 'Pink Floyd', releaseYear: 1979, duration: 382, explicit: false },
-    { id: '11', title: 'Wish You Were Here', artist: 'Pink Floyd', releaseYear: 1975, duration: 334, explicit: false },
-    { id: '12', title: 'Sweet Child O Mine', artist: 'Guns N Roses', releaseYear: 1987, duration: 356, explicit: false },
-    { id: '13', title: 'November Rain', artist: 'Guns N Roses', releaseYear: 1991, duration: 537, explicit: false },
-    { id: '14', title: 'Under Pressure', artist: 'Queen & David Bowie', releaseYear: 1981, duration: 248, explicit: false }
-  ];
 
   getRecommendations(): void {
     this.isLoading.set(true);
@@ -48,28 +43,39 @@ export class Recommendation {
     
     console.log('Getting recommendations with preferences:', preferences);
 
-    // Mock API call with delay
-    setTimeout(() => {
-      this.recommendations.set(this.mockRecommendations);
-      this.isLoading.set(false);
-    }, 800);
+    if (preferences.selectedProfile == null || preferences.selectedProfile === '') {
+      this.getRecommendationsByCurrentTrack();
+      return;
+    }
 
-    // TODO: Replace with actual API call
-    // const payload = {
-    //   includeExplicit: preferences.includeExplicit ?? false,
-    //   includeLibraryTracks: preferences.includeLibraryTracks ?? false,
-    //   includeRecentTracks: preferences.includeRecentTracks ?? false,
-    //   profileId: preferences.selectedProfile ?? null
-    // };
-    // this.userService.getRecommendations(payload).subscribe({
-    //   next: (recommendations) => {
-    //     this.recommendations.set(recommendations);
-    //     this.isLoading.set(false);
-    //   },
-    //   error: () => {
-    //     this.isLoading.set(false);
-    //   }
-    // });
+    this.recommendationService.recommendationsByProfile(preferences.selectedProfile!, this.userService.userId()!).subscribe({
+      next: (recommendations) => {
+        this.recommendations.set(recommendations);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  getRecommendationsByCurrentTrack(): void {
+    const currentTrack = this.musicPlayerService.currentTrack();
+    if (!currentTrack || !currentTrack.id) {
+      return;
+    }
+
+    this.isLoading.set(true);
+
+    this.recommendationService.recommendationsByTrack(currentTrack.id, this.userService.userId()!).subscribe({
+      next: (recommendations) => {
+        this.recommendations.set(recommendations);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+      }
+    });
   }
 
   addToLibrary(track: Track): void {
@@ -93,9 +99,58 @@ export class Recommendation {
 
   clearRecommendations(): void {
     this.recommendations.set([]);
+    this.getRecommendationsByCurrentTrack();
   }
 
   playTrack(track: Track): void {
-    this.musicPlayerService.playTrack(track);
+    const currentPlayTime = this.musicPlayerService.currentPlayTime();
+    this.musicPlayerService.playTrack(track, 'recommendations', this.recommendations(), currentPlayTime);
+  }
+
+  loadProfiles(): void {
+    this.profileService.loadProfiles().subscribe({
+      next: (profiles) => {
+        this.profiles.set(profiles);
+      },
+      error: () => {
+        console.error('Failed to load profiles');
+      }
+    });
+  }
+
+  loadPreferences(): void {
+    this.userService.loadPreferences().subscribe({
+      next: (prefs) => {
+        this.preferencesForm.patchValue({
+          includeExplicit: prefs.explicitContent,
+          includeLibraryTracks: prefs.includeOwned,
+          includeRecentTracks: prefs.includeRecent
+        }, { emitEvent: false });
+      },
+      error: () => {
+        console.error('Failed to load preferences');
+      }
+    });
+  }
+
+  setupPreferenceListeners(): void {
+    // Listen to checkbox changes and update backend
+    this.preferencesForm.get('includeExplicit')?.valueChanges.subscribe(value => {
+      if (value !== null) {
+        this.userService.updatePreference('explicitContent', value);
+      }
+    });
+
+    this.preferencesForm.get('includeLibraryTracks')?.valueChanges.subscribe(value => {
+      if (value !== null) {
+        this.userService.updatePreference('includeOwned', value);
+      }
+    });
+
+    this.preferencesForm.get('includeRecentTracks')?.valueChanges.subscribe(value => {
+      if (value !== null) {
+        this.userService.updatePreference('includeRecent', value);
+      }
+    });
   }
 }
