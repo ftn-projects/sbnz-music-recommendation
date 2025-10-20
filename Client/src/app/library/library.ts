@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { UserService } from '../services/user.service';
+import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 
@@ -12,6 +13,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
 })
 export class Library {
   private readonly userService = inject(UserService);
+  private readonly musicPlayerService = inject(MusicPlayerService);
 
   readonly searchControl = new FormControl('');
   readonly searchResults = signal<Track[]>([]);
@@ -76,5 +78,9 @@ export class Library {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  playTrack(track: Track): void {
+    this.musicPlayerService.playTrack(track);
   }
 }

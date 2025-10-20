@@ -1,0 +1,56 @@
+@if (showPlayer() && currentTrack()) {
+    <div class="music-player">
+        <div class="player-content">
+            <!-- Track Info -->
+            <div class="track-info">
+                <div class="track-details">
+                    <h4>{{ currentTrack()!.title }}</h4>
+                    <p>{{ currentTrack()!.artist }}</p>
+                </div>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="player-controls">
+                <div class="control-buttons">
+                    <button mat-icon-button (click)="previous()">
+                        <mat-icon>skip_previous</mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button class="play-button" (click)="togglePlayPause()">
+                        <mat-icon>{{ isPlaying() ? 'pause_circle' : 'play_circle' }}</mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button (click)="next()">
+                        <mat-icon>skip_next</mat-icon>
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <span class="time-current">{{ formatTime(currentTime()) }}</span>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        [value]="progress()"
+                        (input)="seekTo($event)"
+                        class="progress-bar">
+                    <span class="time-duration">{{ formatTime(duration()) }}</span>
+                </div>
+            </div>
+
+            <!-- Library Actions -->
+            <div class="player-actions">
+                @if (isInLibrary()) {
+                    <button mat-icon-button color="warn" (click)="toggleLibrary()">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                } @else {
+                    <button mat-icon-button color="primary" (click)="toggleLibrary()">
+                        <mat-icon>add</mat-icon>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}

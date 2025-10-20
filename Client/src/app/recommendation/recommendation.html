@@ -73,7 +73,7 @@
                 <div class="track-list">
                     @for (track of recommendations(); track track.id) {
                         <div class="track-card">
-                            <div class="track-main">
+                            <div class="track-main" (click)="playTrack(track)" style="cursor: pointer;">
                                 <h4>{{ track.title }}</h4>
                                 <p>{{ track.artist }}</p>
                             </div>
