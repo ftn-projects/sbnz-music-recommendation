@@ -1,5 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
+import { Router } from '@angular/router';
 import { UserService } from '../services/user.service';
 import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
@@ -24,6 +25,7 @@ export class Recommendation implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly musicPlayerService = inject(MusicPlayerService);
   private readonly recommendationService = inject(RecommendationsService);
+  private readonly router = inject(Router);
 
   readonly recommendations = signal<Track[]>([]);
   readonly isLoading = signal(false);
@@ -34,6 +36,11 @@ export class Recommendation implements OnInit {
     includeLibraryTracks: new FormControl(false),
     includeRecentTracks: new FormControl(false),
     selectedProfile: new FormControl('')
+  });
+
+  readonly isProfileSelected = computed(() => {
+    const profile = this.preferencesForm.get('selectedProfile')?.value;
+    return profile != null && profile !== '';
   });
 
   getRecommendations(): void {
@@ -69,6 +76,7 @@ export class Recommendation implements OnInit {
 
     this.recommendationService.recommendationsByTrack(currentTrack.id, this.userService.userId()!).subscribe({
       next: (recommendations) => {
+        console.log('Recommendations: ', recommendations);
         this.recommendations.set(recommendations);
         this.isLoading.set(false);
       },
@@ -76,18 +84,6 @@ export class Recommendation implements OnInit {
         this.isLoading.set(false);
       }
     });
-  }
-
-  addToLibrary(track: Track): void {
-    this.userService.addToLibrary(track);
-  }
-
-  removeFromLibrary(trackId: string): void {
-    this.userService.removeFromLibrary(trackId);
-  }
-
-  isInLibrary(trackId: string): boolean {
-    return this.userService.isInLibrary(trackId);
   }
 
   formatDuration(seconds?: number): string {
@@ -100,11 +96,6 @@ export class Recommendation implements OnInit {
   clearRecommendations(): void {
     this.recommendations.set([]);
     this.getRecommendationsByCurrentTrack();
-  }
-
-  playTrack(track: Track): void {
-    const currentPlayTime = this.musicPlayerService.currentPlayTime();
-    this.musicPlayerService.playTrack(track, 'recommendations', this.recommendations(), currentPlayTime);
   }
 
   loadProfiles(): void {
@@ -152,5 +143,14 @@ export class Recommendation implements OnInit {
         this.userService.updatePreference('includeRecent', value);
       }
     });
+  }
+
+  isGetRecommendationsDisabled(): boolean {
+    const profile = this.preferencesForm.get('selectedProfile')?.value;
+    return this.isLoading() || !profile || profile === '';
+  }
+
+  navigateToLibrary(trackTitle: string): void {
+    this.router.navigate(['/library'], { queryParams: { q: trackTitle } });
   }
 }

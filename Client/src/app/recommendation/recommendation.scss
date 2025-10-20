@@ -178,6 +178,55 @@ h3 {
     }
 }
 
+.track-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  h4 {
+    margin: 0;
+  }
+
+  .year {
+    color: #666;
+    font-size: 0.875rem;
+    font-weight: normal;
+  }
+}
+
+.explicit-tag {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background-color: #666;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+}
+
+.genre-tags {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.genre-tag {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background-color: #e0e0e0;
+  color: #333;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+}
+
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;

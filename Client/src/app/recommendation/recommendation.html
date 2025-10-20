@@ -45,7 +45,7 @@
                         mat-raised-button 
                         color="primary" 
                         (click)="getRecommendations()"
-                        [disabled]="isLoading()">
+                        [disabled]="isGetRecommendationsDisabled()">
                         @if (isLoading()) {
                             <mat-spinner diameter="20"></mat-spinner>
                             <span>Loading...</span>
@@ -71,33 +71,31 @@
                 <h3>Recommended for You</h3>
                 <div class="track-list">
                     @for (track of recommendations(); track track.id) {
-                        <div class="track-card">
-                            <div class="track-main" (click)="playTrack(track)" style="cursor: pointer;">
-                                <h4>{{ track.title }}</h4>
+                        <div class="track-card" (click)="navigateToLibrary(track.title!)" style="cursor: pointer;">
+                            <div class="track-main">
+                                <div class="title-row">
+                                    <h4>{{ track.title }}</h4>
+                                    @if (track.explicit) {
+                                        <span class="explicit-tag">E</span>
+                                    }
+                                    @if (track.releaseYear) {
+                                        <span class="year">{{ track.releaseYear }}</span>
+                                    }
+                                </div>
                                 <p>{{ track.artist }}</p>
                             </div>
                             <div class="track-details">
-                                @if (track.releaseYear) {
-                                    <span class="year">{{ track.releaseYear }}</span>
-                                }
                                 @if (track.duration) {
                                     <span class="duration">{{ formatDuration(track.duration) }}</span>
                                 }
-                                @if (track.explicit) {
-                                    <span class="explicit-badge">E</span>
-                                }
                             </div>
-                            <div class="track-actions">
-                                @if (isInLibrary(track.id!)) {
-                                    <button mat-icon-button color="warn" (click)="removeFromLibrary(track.id!)">
-                                        <mat-icon>delete</mat-icon>
-                                    </button>
-                                } @else {
-                                    <button mat-icon-button color="primary" (click)="addToLibrary(track)">
-                                        <mat-icon>add</mat-icon>
-                                    </button>
-                                }
-                            </div>
+                            @if (track.genres && track.genres.length > 0) {
+                                <div class="genre-tags">
+                                    @for (genre of track.genres; track genre.id) {
+                                        <span class="genre-tag">{{ genre.name }}</span>
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                 </div>

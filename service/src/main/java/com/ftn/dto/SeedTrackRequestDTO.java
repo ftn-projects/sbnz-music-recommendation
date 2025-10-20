@@ -7,6 +7,6 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class SeedTrackRequestDTO {
     public UUID userId;
-    public UUID seedTrackId;
+    public UUID trackId;
     public Integer yearDeltaMax;
 }

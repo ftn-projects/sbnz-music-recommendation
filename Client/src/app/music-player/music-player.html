@@ -3,10 +3,13 @@
         <div class="player-content">
             <!-- Track Info -->
             <div class="track-info">
-                <div class="track-details">
-                    <h4>{{ currentTrack()!.title }}</h4>
-                    <p>{{ currentTrack()!.artist }}</p>
+                <div class="title-row">
+                    <h3>{{ currentTrack()?.title || 'No track selected' }}</h3>
+                    @if (currentTrack()?.explicit) {
+                        <span class="explicit-tag">E</span>
+                    }
                 </div>
+                <p>{{ currentTrack()?.artist || 'Unknown artist' }}</p>
             </div>
 
             <!-- Player Controls -->

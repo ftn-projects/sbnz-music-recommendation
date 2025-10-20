@@ -32,7 +32,12 @@
                         @for (track of searchResults(); track track.id) {
                             <div class="track-card">
                                 <div class="track-main" (click)="playTrack(track, 'search')" style="cursor: pointer;">
-                                    <h4>{{ track.title }}</h4>
+                                    <div class="title-row">
+                                        <h4>{{ track.title }}</h4>
+                                        @if (track.explicit) {
+                                            <span class="explicit-tag">E</span>
+                                        }
+                                    </div>
                                     <p>{{ track.artist }}</p>
                                 </div>
                                 <div class="track-details">
@@ -43,13 +48,20 @@
                                         <span class="duration">{{ formatDuration(track.duration) }}</span>
                                     }
                                 </div>
+                                @if (track.genres && track.genres.length > 0) {
+                                    <div class="genre-tags">
+                                        @for (genre of track.genres; track genre.id) {
+                                            <span class="genre-tag">{{ genre.name }}</span>
+                                        }
+                                    </div>
+                                }
                                 <div class="track-actions">
                                     @if (isInLibrary(track.id!)) {
                                         <button mat-icon-button color="primary" disabled>
                                             <mat-icon>check</mat-icon>
                                         </button>
                                     } @else {
-                                        <button mat-icon-button color="primary" (click)="addToLibrary(track)">
+                                        <button mat-icon-button color="primary" (click)="addToLibrary(track); $event.stopPropagation()">
                                             <mat-icon>add</mat-icon>
                                         </button>
                                     }
@@ -75,7 +87,12 @@
                     @for (track of library(); track track.id) {
                         <div class="track-card">
                             <div class="track-main" (click)="playTrack(track, 'library')" style="cursor: pointer;">
-                                <h4>{{ track.title }}</h4>
+                                <div class="title-row">
+                                    <h4>{{ track.title }}</h4>
+                                    @if (track.explicit) {
+                                        <span class="explicit-tag">E</span>
+                                    }
+                                </div>
                                 <p>{{ track.artist }}</p>
                             </div>
                             <div class="track-details">
@@ -86,8 +103,15 @@
                                     <span class="duration">{{ formatDuration(track.duration) }}</span>
                                 }
                             </div>
+                            @if (track.genres && track.genres.length > 0) {
+                                <div class="genre-tags">
+                                    @for (genre of track.genres; track genre.id) {
+                                        <span class="genre-tag">{{ genre.name }}</span>
+                                    }
+                                </div>
+                            }
                             <div class="track-actions">
-                                <button mat-icon-button color="warn" (click)="removeFromLibrary(track.id!)">
+                                <button mat-icon-button color="warn" (click)="removeFromLibrary(track.id!); $event.stopPropagation()">
                                     <mat-icon>delete</mat-icon>
                                 </button>
                             </div>

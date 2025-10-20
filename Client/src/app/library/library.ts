@@ -5,6 +5,7 @@ import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { TrackService } from '../services/track.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-library',
@@ -13,18 +14,30 @@ import { TrackService } from '../services/track.service';
   styleUrl: './library.scss'
 })
 export class Library implements OnInit {
-  ngOnInit(): void {
-    this.performSearch('');
-    this.loadLibrary();
-  }
   private readonly userService = inject(UserService);
   private readonly trackService = inject(TrackService);
   private readonly musicPlayerService = inject(MusicPlayerService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly searchControl = new FormControl('');
   readonly searchResults = signal<Track[]>([]);
   readonly isSearching = signal(false);
   readonly library = this.userService.library;
+
+  ngOnInit(): void {
+    this.loadLibrary();
+
+    // Check for query param and perform search
+    this.route.queryParams.subscribe(params => {
+      const query = params['q'];
+      if (query) {
+        this.searchControl.setValue(query);
+        this.performSearch(query);
+      } else {
+        this.performSearch('');
+      }
+    });
+  }
 
   onSearchClick(): void {
     const query = this.searchControl.value;

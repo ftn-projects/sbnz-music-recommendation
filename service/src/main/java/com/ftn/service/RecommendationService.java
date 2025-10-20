@@ -4,6 +4,7 @@ import com.ftn.mapper.ProfileMapper;
 import com.ftn.model.*;
 import com.ftn.model.request.ProfileRequest;
 import com.ftn.model.request.SeedTrackRequest;
+import com.ftn.model.track.Track;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.mapper.UserMapper;
 import com.ftn.mapper.TrackMapper;
@@ -111,13 +112,18 @@ public class RecommendationService {
                 profileId
         );
 
-        return runBatchRecommendation(user, profile, profileRequest, null);
+        return runBatchRecommendation(user, profile, profileRequest, null, null);
     }
 
     public List<TrackCandidate> recommendForTrack(UUID userId, UUID seedTrackId, Integer yearDeltaMax) {
         log.info("Starting seed-track recommendation: user={}, seedTrack={}, yearDeltaMax={}", userId, seedTrackId, yearDeltaMax);
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
+
+        // Load the seed track
+        var seedTrackEntity = trackRepository.findById(seedTrackId)
+                .orElseThrow(() -> new NoSuchElementException("Seed track not found: " + seedTrackId));
+        var seedTrack = trackMapper.toTrack(seedTrackEntity);
 
         // Create SeedTrackRequest
         var seedRequest = new SeedTrackRequest(
@@ -127,14 +133,15 @@ public class RecommendationService {
                 yearDeltaMax
         );
 
-        return runBatchRecommendation(user, null, null, seedRequest);
+        return runBatchRecommendation(user, null, null, seedRequest, seedTrack);
     }
 
     private List<TrackCandidate> runBatchRecommendation(
             UserEntity userEntity,
             Profile profile,
             ProfileRequest profileRequest,
-            SeedTrackRequest seedRequest) {
+            SeedTrackRequest seedRequest,
+            Track seedTrack) {
         var total = trackRepository.getTotal();
         var pages = planPages(total, batchSize);
 
@@ -148,7 +155,7 @@ public class RecommendationService {
         var user = userMapper.toUser(userEntity);
         var futures = pages.stream()
                 .map(page -> CompletableFuture.supplyAsync(() ->
-                        processPage(user, profile, profileRequest, seedRequest, context, page), pool))
+                        processPage(user, profile, profileRequest, seedRequest, seedTrack, context, page), pool))
                 .collect(Collectors.toList());
 
         // Combine all results from all batches
@@ -172,6 +179,7 @@ public class RecommendationService {
             Profile profile,
             ProfileRequest profileRequest,
             SeedTrackRequest seedRequest,
+            Track seedTrack,
             RequestContext context,
             Page page) {
         log.debug("Processing page offset={}, limit={}", page.getOffset(), page.getLimit());
@@ -214,6 +222,7 @@ public class RecommendationService {
         // Add seed request (if seed-based recommendation)
         if (seedRequest != null) {
             facts.add(seedRequest);
+            facts.add(seedTrack);
         }
 
         // Create TrackCandidate for each track - these will be scored by Drools

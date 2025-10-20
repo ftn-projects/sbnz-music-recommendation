@@ -21,4 +21,5 @@ public class TrackDTO {
     private Integer duration;
     private List<GenreEntity> genres;
     private AudioFeaturesEntity features;
+    private Double score;
 }
