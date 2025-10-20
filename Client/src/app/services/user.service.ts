@@ -3,9 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Track } from '../models/track.model';
 
-interface LoginResponse {
-  userId: string;
-  username?: string;
+interface Preferences {
+  explicitContent: boolean;
+  includeOwned: boolean;
+  includeRecent: boolean;
 }
 
 @Injectable({
@@ -13,21 +14,24 @@ interface LoginResponse {
 })
 export class UserService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api'; // Adjust to your backend URL
+  private readonly apiUrl = 'http://localhost:8080/api/users'; 
   
-  // Signal to store the current userId
   readonly userId = signal<string | null>(null);
   readonly username = signal<string | null>(null);
   readonly isLoggedIn = computed(() => this.userId() !== null);
   readonly library = signal<Track[]>([]);
+  readonly preferences = signal<Preferences>({
+    explicitContent: false,
+    includeOwned: false,
+    includeRecent: false
+  });
 
-  login(username: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { username }).pipe(
+  login(username: string): Observable<string> {
+    return this.http.post<string>(`${this.apiUrl}/login/${username}`, {}).pipe(
       tap(response => {
-        this.userId.set(response.userId);
+        this.userId.set(response);
         this.username.set(username);
-        // Optionally save to localStorage for persistence
-        localStorage.setItem('userId', response.userId);
+        localStorage.setItem('userId', response);
         localStorage.setItem('username', username);
       })
     );
@@ -42,7 +46,6 @@ export class UserService {
     localStorage.removeItem('library');
   }
 
-  // Load user from localStorage on app init
   loadUserFromStorage(): void {
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
@@ -56,32 +59,99 @@ export class UserService {
     }
   }
 
-  // Add track to library
+
   addToLibrary(track: Track): void {
     const currentLibrary = this.library();
-    // Check if track already exists
     if (!currentLibrary.find(t => t.id === track.id)) {
       const updatedLibrary = [...currentLibrary, track];
       this.library.set(updatedLibrary);
       localStorage.setItem('library', JSON.stringify(updatedLibrary));
+
+      const userId = this.userId();
+      if (userId && track.id) {
+        this.http.put(`${this.apiUrl}/library`, {
+          userId: userId,
+          trackId: track.id,
+          add: true
+        }).subscribe({
+          error: (err) => console.error('Failed to add track to library:', err)
+        });
+      }
     }
   }
 
-  // Remove track from library
   removeFromLibrary(trackId: string): void {
     const updatedLibrary = this.library().filter(t => t.id !== trackId);
     this.library.set(updatedLibrary);
     localStorage.setItem('library', JSON.stringify(updatedLibrary));
+
+    const userId = this.userId();
+    if (userId) {
+      this.http.put(`${this.apiUrl}/library`, {
+        userId: userId,
+        trackId: trackId,
+        add: false
+      }).subscribe({
+        error: (err) => console.error('Failed to remove track from library:', err)
+      });
+    }
   }
 
-  // Check if track is in library
   isInLibrary(trackId: string): boolean {
     return this.library().some(t => t.id === trackId);
   }
 
-  // Search tracks (mock implementation - replace with actual API call)
   searchTracks(query: string): Observable<Track[]> {
-    // TODO: Replace with actual API call
     return this.http.get<Track[]>(`${this.apiUrl}/tracks/search?q=${query}`);
+  }
+
+  registerUser(name: string, surname: string, username: string, age: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/register`, { fullName: name + ' ' + surname, username, age });
+  }
+
+  updatePreference(preference: 'explicitContent' | 'includeOwned' | 'includeRecent', value: boolean): void {
+    const userId = this.userId();
+    if (!userId) return;
+
+    const currentPrefs = this.preferences();
+    this.preferences.set({ ...currentPrefs, [preference]: value });
+
+    this.http.put(`${this.apiUrl}/preferences`, {
+      userId: userId,
+      preference: preference,
+      value: value
+    }).subscribe({
+      error: (err) => {
+        console.error('Failed to update preference:', err);
+        this.preferences.set(currentPrefs);
+      }
+    });
+  }
+
+  loadPreferences(): Observable<Preferences> {
+    const userId = this.userId();
+    console.log('Loading preferences for userId:', userId);
+    if (!userId) {
+      return new Observable(observer => observer.complete());
+    }
+    console.log('Fetching preferences from backend for userId:', userId);
+    return this.http.get<Preferences>(`${this.apiUrl}/preferences/${userId}`).pipe(
+      tap(prefs => {
+        this.preferences.set(prefs);
+      })
+    );
+  }
+
+  loadLibrary(): void {
+    const userId = this.userId();
+    if (userId) {
+      this.http.get<Track[]>(`${this.apiUrl}/library/${userId}`).subscribe({
+        next: (tracks) => {
+          this.library.set(tracks);
+          localStorage.setItem('library', JSON.stringify(tracks));
+        },
+        error: (err) => console.error('Failed to load library:', err)
+      });
+    }
   }
 }

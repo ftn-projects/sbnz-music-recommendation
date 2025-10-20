@@ -71,13 +71,19 @@ export class MusicPlayer {
   }
 
   next(): void {
-    // TODO: Implement queue/playlist logic
-    console.log('Next track');
+    const currentPlayTime = this.currentTime();
+    if (this.musicPlayerService.next(currentPlayTime, true)) { // true = skip
+      this.currentTime.set(0);
+      this.play();
+    }
   }
 
   previous(): void {
-    // TODO: Implement queue/playlist logic
-    console.log('Previous track');
+    const currentPlayTime = this.currentTime();
+    if (this.musicPlayerService.previous(currentPlayTime)) {
+      this.currentTime.set(0);
+      this.play();
+    }
   }
 
   private startProgress(): void {
@@ -86,10 +92,21 @@ export class MusicPlayer {
       const current = this.currentTime();
       const dur = this.duration();
       if (current < dur) {
-        this.currentTime.set(current + 1);
+        const newTime = current + 1;
+        this.currentTime.set(newTime);
+        // Update play time in service
+        this.musicPlayerService.updatePlayTime(newTime);
       } else {
-        this.pause();
-        this.currentTime.set(0);
+        // Song finished naturally, play next (not a skip)
+        const currentPlayTime = this.currentTime();
+        if (this.musicPlayerService.hasNext()) {
+          this.musicPlayerService.next(currentPlayTime, false); // false = not a skip
+          this.currentTime.set(0);
+          this.play();
+        } else {
+          this.pause();
+          this.currentTime.set(0);
+        }
       }
     }, 1000);
   }
@@ -125,9 +142,12 @@ export class MusicPlayer {
     if (!track) return;
 
     if (this.isInLibrary()) {
+      // Remove from library
       this.userService.removeFromLibrary(track.id!);
     } else {
+      // Add to library AND log like activity
       this.userService.addToLibrary(track);
+      this.musicPlayerService.likeCurrentTrack();
     }
   }
 

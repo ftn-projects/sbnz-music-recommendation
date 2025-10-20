@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SnackService } from '../services/snack.service';
+import { UserService } from '../services/user.service';
 
 @Component({
   selector: 'app-registration',
@@ -17,7 +18,7 @@ export class Registration {
     age: new FormControl('', [Validators.required, Validators.min(1), Validators.max(120)])
   });
 
-  constructor(private router: Router, private snackService: SnackService) {}
+  constructor(private router: Router, private snackService: SnackService, private userService: UserService) {}
 
   get name(): string {
     return this.registrationFormGroup.get('name')?.value ?? '';
@@ -43,11 +44,19 @@ export class Registration {
         username: this.username,
         age: this.age
       });
+      this.userService.registerUser(this.name, this.surname, this.username, Number(this.age)).subscribe({
+        next: (response) => {
+          this.snackService.displaySnack('Registration successful!');
+          this.router.navigate(['/login']);
+        },
+        error: (error) => {
+          this.snackService.displayError('Registration failed. Please try again.');
+        }
+      });
     } else {
       this.snackService.displayError('Please fill in all required fields correctly.');
       return;
     }
-    // TODO: Implement actual registration request
 
   }
 }

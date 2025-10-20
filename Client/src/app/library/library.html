@@ -31,7 +31,7 @@
                     <div class="track-list">
                         @for (track of searchResults(); track track.id) {
                             <div class="track-card">
-                                <div class="track-main" (click)="playTrack(track)" style="cursor: pointer;">
+                                <div class="track-main" (click)="playTrack(track, 'search')" style="cursor: pointer;">
                                     <h4>{{ track.title }}</h4>
                                     <p>{{ track.artist }}</p>
                                 </div>
@@ -74,7 +74,7 @@
                 <div class="track-list">
                     @for (track of library(); track track.id) {
                         <div class="track-card">
-                            <div class="track-main" (click)="playTrack(track)" style="cursor: pointer;">
+                            <div class="track-main" (click)="playTrack(track, 'library')" style="cursor: pointer;">
                                 <h4>{{ track.title }}</h4>
                                 <p>{{ track.artist }}</p>
                             </div>

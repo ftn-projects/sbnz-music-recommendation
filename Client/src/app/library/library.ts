@@ -1,9 +1,10 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { UserService } from '../services/user.service';
 import { MusicPlayerService } from '../services/music-player.service';
 import { Track } from '../models/track.model';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { TrackService } from '../services/track.service';
 
 @Component({
   selector: 'app-library',
@@ -11,8 +12,13 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
   templateUrl: './library.html',
   styleUrl: './library.scss'
 })
-export class Library {
+export class Library implements OnInit {
+  ngOnInit(): void {
+    this.performSearch('');
+    this.loadLibrary();
+  }
   private readonly userService = inject(UserService);
+  private readonly trackService = inject(TrackService);
   private readonly musicPlayerService = inject(MusicPlayerService);
 
   readonly searchControl = new FormControl('');
@@ -20,45 +26,24 @@ export class Library {
   readonly isSearching = signal(false);
   readonly library = this.userService.library;
 
-  // Mock data for demonstration - remove when API is ready
-  private mockTracks: Track[] = [
-    { id: '1', title: 'Bohemian Rhapsody', artist: 'Queen', releaseYear: 1975, duration: 354, explicit: false },
-    { id: '2', title: 'Stairway to Heaven', artist: 'Led Zeppelin', releaseYear: 1971, duration: 482, explicit: false },
-    { id: '3', title: 'Hotel California', artist: 'Eagles', releaseYear: 1976, duration: 391, explicit: false },
-    { id: '4', title: 'Imagine', artist: 'John Lennon', releaseYear: 1971, duration: 183, explicit: false },
-    { id: '5', title: 'Smells Like Teen Spirit', artist: 'Nirvana', releaseYear: 1991, duration: 301, explicit: false }
-  ];
-
   onSearchClick(): void {
     const query = this.searchControl.value;
-    if (query && query.trim().length > 0) {
-      this.performSearch(query);
-    } else {
-      this.searchResults.set([]);
-    }
+    this.performSearch(query ?? '');
+ 
   }
 
   performSearch(query: string): void {
     this.isSearching.set(true);
-    
-    // Mock search - filter mock tracks
-    const results = this.mockTracks.filter(track => 
-      track.title?.toLowerCase().includes(query.toLowerCase()) ||
-      track.artist?.toLowerCase().includes(query.toLowerCase())
-    );
-    this.searchResults.set(results);
-    this.isSearching.set(false);
-
-    // TODO: Replace with actual API call
-    // this.userService.searchTracks(query).subscribe({
-    //   next: (results) => {
-    //     this.searchResults.set(results);
-    //     this.isSearching.set(false);
-    //   },
-    //   error: () => {
-    //     this.isSearching.set(false);
-    //   }
-    // });
+    this.trackService.searchTracks(query).subscribe({
+      next: (results) => {
+        console.log('Results: ', results.content);
+        this.searchResults.set(results.content);
+        this.isSearching.set(false);
+      },
+      error: () => {
+        this.isSearching.set(false);
+      }
+    });
   }
 
   addToLibrary(track: Track): void {
@@ -80,7 +65,13 @@ export class Library {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  playTrack(track: Track): void {
-    this.musicPlayerService.playTrack(track);
+  playTrack(track: Track, source: 'library' | 'search'): void {
+    const tracks = source === 'library' ? this.library() : this.searchResults();
+    const currentPlayTime = this.musicPlayerService.currentPlayTime();
+    this.musicPlayerService.playTrack(track, source, tracks, currentPlayTime);
+  }
+
+  loadLibrary(): void {
+    this.userService.loadLibrary();
   }
 }

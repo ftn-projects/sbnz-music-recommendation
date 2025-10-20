@@ -10,9 +10,8 @@
                     <!-- Profile Selection -->
                     <div class="preference-item full-width">
                         <mat-form-field appearance="outline" class="full-width">
-                            <mat-label>Select Profile (Optional)</mat-label>
+                            <mat-label>Select Profile</mat-label>
                             <mat-select formControlName="selectedProfile">
-                                <mat-option [value]="null">None</mat-option>
                                 @for (profile of profiles(); track profile.id) {
                                     <mat-option [value]="profile.id">{{ profile.name }}</mat-option>
                                 }
