@@ -1,8 +1,0 @@
-featureName,featureGetter
-danceability,getDanceability
-energy,getEnergy
-speechiness,getSpeechiness
-acousticness,getAcousticness
-instrumentalness,getInstrumentalness
-liveness,getLiveness
-valence,getValence

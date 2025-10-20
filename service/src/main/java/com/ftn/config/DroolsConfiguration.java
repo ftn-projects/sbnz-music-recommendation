@@ -17,6 +17,7 @@ import org.drools.template.ObjectDataCompiler;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.*;
+import org.kie.api.io.KieResources;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.slf4j.Logger;
@@ -59,56 +60,99 @@ public class DroolsConfiguration {
     public KieContainer kieContainer() {
         var ks = KieServices.Factory.get();
 
-        // Start with base kjar
-        var baseContainer = ks.newKieContainer(
-                ks.newReleaseId("com.ftn.sbnz", "kjar", "0.0.1-SNAPSHOT")
-        );
-
-        // Create a new KieFileSystem to add compiled templates
+        // Create a new KieFileSystem that will include both base kjar and compiled templates
         var kfs = ks.newKieFileSystem();
 
-        // Compile and add templates directly as DRL resources
-        try {
-            var featureScoringDrl = compileTemplate(
-                    "rules/templates/featureScoring/featureScoring.drt",
-                    createFeatureData()
-            );
-            kfs.write("src/main/resources/rules/templates/featureScoring.drl", featureScoringDrl);
-            log.info("Compiled featureScoring template -> {} chars", featureScoringDrl.length());
+        // 1. Add the base kjar's kmodule.xml
+        var kmoduleRes = ks.getResources().newClassPathResource("META-INF/kmodule.xml");
+        kfs.write(kmoduleRes);
 
+        // 2. Compile and add templates as DRL resources
+        try {
             var featureSimilarityDrl = compileTemplate(
                     "rules/templates/featureSimilarity/featureSimilarity.drt",
                     createFeatureData()
             );
-            kfs.write("src/main/resources/rules/templates/featureSimilarity.drl", featureSimilarityDrl);
+            kfs.write("src/main/resources/rules/templates/featureSimilarity/featureSimilarity.drl", featureSimilarityDrl);
             log.info("Compiled featureSimilarity template -> {} chars", featureSimilarityDrl.length());
 
-            // Build the templates
+            var profileFeaturesDrl = compileTemplate(
+                    "rules/templates/profileFeatures/profileFeatures.drt",
+                    createFeatureData()
+            );
+            kfs.write("src/main/resources/rules/templates/profileFeatures/profileFeatures.drl", profileFeaturesDrl);
+            log.info("Compiled profileFeatures template -> {} chars", profileFeaturesDrl.length());
+
+            // 3. Add all other DRL files from the base kjar
+            addBaseKjarResources(ks, kfs);
+
+            // 4. Build everything together
             var kieBuilder = ks.newKieBuilder(kfs);
             kieBuilder.buildAll();
 
             var results = kieBuilder.getResults();
             if (results.hasMessages(Message.Level.ERROR)) {
-                log.error("Template compilation errors: {}", results.getMessages(Message.Level.ERROR));
-                throw new IllegalStateException("Failed to compile template rules");
+                log.error("Build errors: {}", results.getMessages(Message.Level.ERROR));
+                throw new IllegalStateException("Failed to build rules");
             }
             if (results.hasMessages(Message.Level.WARNING)) {
-                log.warn("Template compilation warnings: {}", results.getMessages(Message.Level.WARNING));
+                log.warn("Build warnings: {}", results.getMessages(Message.Level.WARNING));
             }
 
-            log.info("Successfully compiled and built template rules");
+            log.info("Successfully compiled and built all rules including templates");
 
         } catch (Exception e) {
             log.error("Failed to compile templates", e);
             throw new RuntimeException("Template compilation failed", e);
         }
 
-        // Start scanner for hot reload
-        var scanner = ks.newKieScanner(baseContainer);
-        scanner.start(10_000);
-        log.info("KieContainer initialized with scanner polling every 10s");
+        // Create container from the built KieFileSystem
+        var kieContainer = ks.newKieContainer(ks.getRepository().getDefaultReleaseId());
 
-        return baseContainer;
+        log.info("KieContainer initialized with compiled templates");
+
+        return kieContainer;
+    }
+
+    private void addBaseKjarResources(KieServices ks, KieFileSystem kfs) throws Exception {
+        // Add all DRL files from the base kjar
+        var resources = ks.getResources();
+
+        // Add each rule package
+        addResourcesFromPath(resources, kfs, "rules/filterRules");
+        addResourcesFromPath(resources, kfs, "rules/specificationRules");
+        addResourcesFromPath(resources, kfs, "rules/affinityRules");
+        addResourcesFromPath(resources, kfs, "rules/aggregationRules");
+        addResourcesFromPath(resources, kfs, "rules/cep");
+        addResourcesFromPath(resources, kfs, "rules/genreBackwards");
+        addResourcesFromPath(resources, kfs, "rules/profileBackwards");
+
+        log.info("Added all base kjar DRL resources to KieFileSystem");
+    }
+
+    private void addResourcesFromPath(KieResources resources, KieFileSystem kfs, String path) {
+        try {
+            var pathResource = new ClassPathResource(path);
+            if (!pathResource.exists()) {
+                log.warn("Path does not exist: {}", path);
+                return;
+            }
+
+            var file = pathResource.getFile();
+            if (file.isDirectory()) {
+                var files = file.listFiles((dir, name) -> name.endsWith(".drl"));
+                if (files != null) {
+                    for (var drlFile : files) {
+                        var res = resources.newFileSystemResource(drlFile);
+                        var targetPath = "src/main/resources/" + path + "/" + drlFile.getName();
+                        kfs.write(targetPath, res);
+                        log.debug("Added resource: {}", targetPath);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not add resources from path: {}", path, e);
+        }
     }
 
     @Bean
