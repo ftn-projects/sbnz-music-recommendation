@@ -65,15 +65,9 @@ public class GenrePreferenceSyncService {
             if (userOpt.isEmpty()) continue;
 
             var user = userOpt.get();
-            Map<UUID, Double> prefs = user.getGenrePreferences();
-
-            // Apply direct updates from CEP
-            updates.forEach((genreId, delta) ->
-                    prefs.merge(genreId, delta, (old, d) -> Math.max(0.0, Math.min(1.0, old + d)))
-            );
 
             // Use backwards chaining to infer genre affinities through hierarchy
-            computeInferredPreferences(user, updates.keySet());
+            computeInferredPreferences(user, updates);
 
             userRepository.save(user);
         }
@@ -87,7 +81,7 @@ public class GenrePreferenceSyncService {
      * @param userEntity             The user entity to update (modified in-place)
      * @param directlyAffectedGenres Genre IDs that were directly updated by CEP (excluded from boost)
      */
-    private void computeInferredPreferences(UserEntity userEntity, Set<UUID> directlyAffectedGenres) {
+    private void computeInferredPreferences(UserEntity userEntity, Map<UUID, Double> directlyAffectedGenres) {
         // Create a User model object for the backwards chaining session
         User user = userMapper.toUser(userEntity);
 
@@ -96,14 +90,27 @@ public class GenrePreferenceSyncService {
 
         try {
             Map<UUID, Double> prefs = userEntity.getGenrePreferences();
+            Map<UUID, Double> changedPrefs = new HashMap<>(prefs);
+
+            for (var entry : directlyAffectedGenres.entrySet()) {
+                UUID genreId = entry.getKey();
+                double delta = entry.getValue();
+
+                double currentPref = prefs.getOrDefault(genreId, 0.5);
+                double newPref = Math.max(0.0, Math.min(1.0, currentPref + delta));
+                prefs.put(genreId, newPref);
+                changedPrefs.put(genreId, newPref);
+                log.debug("Updated directly affected genre '{}' ({}): {}", genreId, genreId, newPref);
+            }
+
+            user.setGenrePreferences(changedPrefs);
 
             // Query all Genre facts from the session (already loaded by DroolsConfiguration)
             for (Object obj : backwardsSession.getObjects(fact -> fact instanceof Genre)) {
                 Genre genre = (Genre) obj;
                 UUID genreId = genre.getId();
 
-                // Skip genres that were directly affected by CEP events
-                if (directlyAffectedGenres.contains(genreId)) {
+                if (directlyAffectedGenres.containsKey(genreId)) {
                     continue;
                 }
 
@@ -115,11 +122,13 @@ public class GenrePreferenceSyncService {
 
                 if (like) {
                     double currentPref = prefs.getOrDefault(genreId, 0.0);
-                    double newPref = Math.max(0.0, Math.min(1.0, currentPref + 0.08));
+                    double newPref = Math.max(0.0, Math.min(1.0, currentPref + 0.8 * directlyAffectedGenres.get(genreId)));
                     prefs.put(genreId, newPref);
                     log.debug("Inferred affinity for genre '{}' ({}): {} -> {}", genre.getName(), genreId, currentPref, newPref);
                 }
             }
+
+            userEntity.setGenrePreferences(prefs);
         } finally {
             // Clean up: remove user from session
             backwardsSession.delete(userHandle);

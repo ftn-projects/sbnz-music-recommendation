@@ -9,17 +9,8 @@ import com.ftn.model.event.TrackLikedEvent;
 import com.ftn.model.event.TrackDislikedEvent;
 import com.ftn.model.event.GenreLikedEvent;
 import com.ftn.model.event.GenreDislikedEvent;
+import com.ftn.model.event.GenreAffinity;
 import com.ftn.model.track.Track;
-
-declare GenreAffinity
-    @role( event )
-    @timestamp( timestamp )
-    @expires( 2d )
-    userId    : UUID
-    genreId   : UUID
-    score     : int
-    timestamp : long
-end
 
 rule "S1 increase track liked and genre affinity after 3 track listens"
 when
@@ -84,7 +75,7 @@ end
 rule "G1: positive genre affinity in last hour -> GenreLikedEvent"
 when
     GenreAffinity( $userId : userId, $genreId : genreId )
-    Number( intValue > 10 ) from accumulate(
+    Number( intValue > 5 ) from accumulate(
         GenreAffinity( userId == $userId, genreId == $genreId, $score : score )
         over window:time(1h),
         sum( $score )
@@ -98,7 +89,7 @@ end
 rule "G2: negative genre affinity in last hour -> GenreDislikedEvent"
 when
     GenreAffinity( $userId : userId, $genreId : genreId )
-    Number( intValue < -5 ) from accumulate(
+    Number( intValue < -3 ) from accumulate(
         GenreAffinity( userId == $userId, genreId == $genreId, $score : score )
         over window:time(1h),
         sum( $score )

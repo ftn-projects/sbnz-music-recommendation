@@ -43,7 +43,7 @@ then
         $tid,
         ScoreComponent.Source.PROFILE_FEATURES,
         $weightedScore
-    );
+    ));
 end
 
 end template

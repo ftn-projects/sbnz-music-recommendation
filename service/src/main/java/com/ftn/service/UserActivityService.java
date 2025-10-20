@@ -1,5 +1,7 @@
 package com.ftn.service;
 
+import com.ftn.model.Genre;
+import com.ftn.model.event.GenreAffinity;
 import com.ftn.model.event.GenreDislikedEvent;
 import com.ftn.model.event.GenreLikedEvent;
 import com.ftn.model.event.ListenEvent;
@@ -32,14 +34,14 @@ public class UserActivityService {
                 .put(event.getTrackId(), System.currentTimeMillis());
     }
 
-    public void onGenreLikedEvent(GenreLikedEvent event) {
+    public void onGenreLikedEvent(GenreAffinity event) {
         genreUpdates.computeIfAbsent(event.getUserId(), k -> new ConcurrentHashMap<>())
-                .merge(event.getGenreId(), 0.1, Double::sum);
+                .merge(event.getGenreId(), event.getScore() * 0.04, Double::sum);
     }
 
-    public void onGenreDislikedEvent(GenreDislikedEvent event) {
+    public void onGenreDislikedEvent(GenreAffinity event) {
         genreUpdates.computeIfAbsent(event.getUserId(), k -> new ConcurrentHashMap<>())
-                .merge(event.getGenreId(), 0.1, Double::sum);
+                .merge(event.getGenreId(), event.getScore() * -0.04, Double::sum);
     }
 
     public Set<UUID> getRecentTrackIds(UUID userId) {

@@ -1,8 +1,6 @@
 package com.ftn.config;
 
-import com.ftn.model.event.GenreDislikedEvent;
-import com.ftn.model.event.GenreLikedEvent;
-import com.ftn.model.event.ListenEvent;
+import com.ftn.model.event.GenreAffinity;
 import com.ftn.service.UserActivityService;
 import org.kie.api.event.rule.DefaultAgendaEventListener;
 import org.kie.api.event.rule.AfterMatchFiredEvent;
@@ -31,10 +29,10 @@ public class CepEventListenerConfiguration {
                     log.info("[CEP] Rule fired: {} - {}", event.getMatch().getRule().getName(), event.getMatch().getObjects());
 
                     for (Object obj : event.getMatch().getObjects()) {
-                        if (obj instanceof GenreLikedEvent) {
-                            service.onGenreLikedEvent((GenreLikedEvent) obj);
-                        } else if (obj instanceof GenreDislikedEvent) {
-                            service.onGenreDislikedEvent((GenreDislikedEvent) obj);
+                        if (obj instanceof GenreAffinity) {
+                            service.onGenreLikedEvent((GenreAffinity) obj);
+                        } else if (obj instanceof GenreAffinity) {
+                            service.onGenreDislikedEvent((GenreAffinity) obj);
                         }
                     }
                 }

@@ -36,7 +36,7 @@ then
         $tid,
         ScoreComponent.Source.SEED_FEATURES,
         $weightedScore
-    ) );
+    ));
 end
 
 end template
