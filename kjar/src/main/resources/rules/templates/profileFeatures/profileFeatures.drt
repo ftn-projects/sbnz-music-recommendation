@@ -1,0 +1,50 @@
+template header
+featureName
+featureGetter
+
+package templates.profileFeatures
+
+dialect "java"
+
+import com.ftn.model.Profile;
+import com.ftn.model.AudioFeatures;
+import com.ftn.model.ScoreComponent;
+import com.ftn.model.specification.ScoringSpecification;
+import com.ftn.model.track.Track;
+import com.ftn.model.track.TrackCandidate;
+
+template "B3 - Profile feature similarity @{featureName}"
+
+rule "b3_@{featureName}_score" salience 10
+when
+    $spec : ScoringSpecification( wProfileFeatures != null && wProfileFeatures > 0, $weight : wProfileFeatures )
+
+    // candidate track we're scoring
+    $cand : TrackCandidate( $tid : trackId )
+    $track : Track( id == $tid, features != null )
+
+    // profile with target features
+    $profile : Profile( targetFeatures != null )
+
+    // Extract feature values in when clause
+    $trackVal : Double() from ( $track.getFeatures().@{featureGetter}() )
+    $profileVal : Double() from ( $profile.getTargetFeatures().@{featureGetter}() )
+
+    // Calculate absolute difference in when clause
+    $diff : Double() from ( Math.abs($trackVal - $profileVal) )
+
+    // Calculate weighted negative contribution in when clause
+    $weightedScore : Double() from ( (-$diff / 7.0) * $weight )
+then
+    // Insert negative contribution: -(diff/7) * weight
+    // When summed with base (1.0 * weight), gives: (1.0 - sum(diffs)/7) * weight
+    insert( new ScoreComponent(
+        $cand.getUserId(),
+        $tid,
+        ScoreComponent.Source.PROFILE_FEATURES,
+        $weightedScore
+    );
+end
+
+end template
+

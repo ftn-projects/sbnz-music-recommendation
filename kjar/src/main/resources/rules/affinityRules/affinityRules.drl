@@ -3,6 +3,7 @@ package rules.affinityRules
 import java.util.UUID;
 import com.ftn.model.track.Track;
 import com.ftn.model.User;
+import com.ftn.model.Profile;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.model.specification.ScoringSpecification;
 import com.ftn.model.request.SeedTrackRequest;
@@ -11,7 +12,7 @@ import com.ftn.model.ScoreComponent;
 rule "B1 - User taste (custom accumulate, 0 if none)" salience 10
 dialect "java"
 when
-    $spec  : ScoringSpecification( wUserTaste != null && wUserTaste > 0 )
+    $spec  : ScoringSpecification( wUserTaste != null && wUserTaste > 0, $weight : wUserTaste )
     $tc    : TrackCandidate( $uid : userId, $tid : trackId )
     $user  : User( id == $uid, $prefs : genrePreferences )
     eval( $prefs != null && !$prefs.isEmpty() )
@@ -19,42 +20,97 @@ when
 
     $score : Number() from accumulate(
         $gid : java.util.UUID() from $gids,
-        init( double best = Double.NEGATIVE_INFINITY; int cnt = 0; ),
+        init( double sum = 0.0; int cnt = 0; ),
         action( {
             Double p = (Double) $prefs.get($gid);
-            if (p != null) { if (p > best) best = p; cnt++; }
+            if (p != null) { sum += p; cnt++; }
         } ),
-        result( cnt == 0 ? null : best )
+        result( cnt == 0 ? null : sum )
     )
+
+    // Calculate weighted score in when clause
+    $weightedScore : Double() from ($score.doubleValue() * $weight)
 then
     insert( new ScoreComponent(
         $uid, $tid, ScoreComponent.Source.TASTE,
-        $score.doubleValue() * $spec.getWUserTaste()
-    ) );
+        $weightedScore
+    ));
+end
+
+rule "B2 - Profile genre alignment" salience 10
+when
+    $spec : ScoringSpecification( wProfileGenre != null && wProfileGenre > 0, $weight : wProfileGenre )
+    $candidate : TrackCandidate( $uid : userId, $tid : trackId )
+    $profile : Profile( $alignedGenres : alignedGenres )
+    eval( $alignedGenres != null && !$alignedGenres.isEmpty() )
+    $track : Track( id == $tid, $trackGenres : genreIds )
+
+    $matches : Number() from accumulate(
+        $g : java.util.UUID( this memberOf $alignedGenres ) from $trackGenres,
+        count($g)
+    )
+
+    $score : Double() from (($matches.intValue() > 0) ? 1.0 : 0.0)
+    $weightedScore : Double() from ($score * $weight)
+then
+    insert( new ScoreComponent($uid, $tid, ScoreComponent.Source.PROFILE_GENRE, $weightedScore) );
+end
+
+rule "B3 - Base score for profile feature similarity (1.0 starting point)" salience 11
+when
+    $spec : ScoringSpecification( wProfileFeatures != null && wProfileFeatures > 0, $weight : wProfileFeatures )
+    $cand : TrackCandidate( $uid : userId, $tid : trackId )
+    $track : Track( id == $tid, features != null )
+    $profile : Profile( targetFeatures != null )
+
+    $baseScore : Double() from (1.0 * $weight)
+then
+    insert( new ScoreComponent($uid, $tid, ScoreComponent.Source.PROFILE_FEATURES, $baseScore) );
 end
 
 rule "B4 - Seed track genre similarity scoring" salience 10
 when
-    $spec : ScoringSpecification( wSeedGenre != null && wSeedGenre > 0 )
+    $spec : ScoringSpecification( wSeedGenre != null && wSeedGenre > 0, $weight : wSeedGenre )
     $user : User( $uid : id )
     $candidate : TrackCandidate( userId == $uid, $tid : trackId )
-    $track : Track( id == $tid, $genreIds : genreIds )
+    $track : Track( id == $tid, $genreIds : genreIds, $candidateSize : genreIds.size() )
     $seedReq : SeedTrackRequest( userId == $uid, $seedId : seedTrackId )
-    $seedTrack : Track( id == $seedId, $seedGenres : genreIds )
+    $seedTrack : Track( id == $seedId, $seedGenres : genreIds, $seedSize : genreIds.size() )
 
-    // Count how many candidate genres are also in the seed track's genres
-    $matches : Number() from accumulate(
+    // Count intersection
+    $intersection : Number() from accumulate(
         $g : java.util.UUID( this memberOf $seedGenres ) from $genreIds,
         count($g)
     )
-then
-    double denom = ($genreIds != null && !$genreIds.isEmpty()) ? $genreIds.size() : 1.0;
-    double similarity = $matches.doubleValue() / denom;
 
+    $union : Integer() from ($candidateSize + $seedSize - $intersection.intValue())
+    $similarity : Double() from ($union > 0 ? ((double)$intersection.intValue() / $union) : 0.0)
+    $weightedScore : Double() from ($similarity * $weight)
+then
     insert( new ScoreComponent(
         $uid,
         $tid,
         ScoreComponent.Source.SEED_GENRE,
-        similarity * $spec.getWSeedGenre()
+        $weightedScore
     ));
+end
+
+rule "B5 - Base score for feature similarity (1.0 starting point)" salience 11
+when
+    $spec : ScoringSpecification( wSeedFeatures != null && wSeedFeatures > 0, $weight : wSeedFeatures )
+    $cand : TrackCandidate( $uid : userId, $tid : trackId )
+    $track : Track( id == $tid, features != null )
+    $seedReq : SeedTrackRequest( userId == $uid, seedTrackId != null )
+    $seed : Track( id == $seedReq.seedTrackId, features != null )
+
+    // Calculate weighted base score in when clause
+    $baseScore : Double() from (1.0 * $weight)
+then
+    // Final = (1.0 - mean(diffs)) * weight
+    insert( new ScoreComponent(
+        $uid,
+        $tid,
+        ScoreComponent.Source.SEED_FEATURES,
+        $baseScore
+    ) );
 end

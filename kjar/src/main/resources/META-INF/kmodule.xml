@@ -1,7 +1,7 @@
 <kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <!-- Classic rules (covers filterRules + specificationRules + affinityRules + aggregationRules) -->
-    <kbase name="appRulesKBase" packages="rules.filterRules, rules.specificationRules, rules.affinityRules, rules.aggregationRules" default="true">
+    <!-- Classic rules (covers filterRules + specificationRules + affinityRules + aggregationRules + templates) -->
+    <kbase name="appRulesKBase" packages="rules.filterRules, rules.specificationRules, rules.affinityRules, rules.aggregationRules, templates.featureSimilarity, templates.profileFeatures" default="true">
         <ksession name="appKsession" type="stateful"/>
     </kbase>
 

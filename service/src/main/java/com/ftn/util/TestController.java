@@ -3,11 +3,12 @@ package com.ftn.util;
 import com.ftn.mapper.ProfileMapper;
 import com.ftn.mapper.TrackMapper;
 import com.ftn.mapper.UserMapper;
+import com.ftn.model.AudioFeatures;
 import com.ftn.model.Genre;
-import com.ftn.model.TrackEntity;
+import com.ftn.model.Profile;
 import com.ftn.model.User;
+import com.ftn.model.request.SeedTrackRequest;
 import com.ftn.model.specification.ScoringSpecification;
-import com.ftn.model.track.Track;
 import com.ftn.model.track.TrackCandidate;
 import com.ftn.repository.ProfileRepository;
 import com.ftn.repository.TrackRepository;
@@ -17,7 +18,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.kie.api.KieBase;
-import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.rule.QueryResults;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/test")
@@ -39,6 +40,7 @@ public class TestController {
     private final TrackMapper trackMapper;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final com.ftn.repository.GenreRepository genreRepository;
 
     public TestController(
             ProfileAlignmentService profileAlignmentService,
@@ -49,7 +51,8 @@ public class TestController {
             TrackRepository trackRepository,
             TrackMapper trackMapper,
             UserRepository userRepository,
-            UserMapper userMapper) {
+            UserMapper userMapper,
+            com.ftn.repository.GenreRepository genreRepository) {
         this.profileAlignmentService = profileAlignmentService;
         this.profileRepository = profileRepository;
         this.profileMapper = profileMapper;
@@ -59,6 +62,7 @@ public class TestController {
         this.trackMapper = trackMapper;
         this.userRepository = userRepository;
         this.userMapper = userMapper;
+        this.genreRepository = genreRepository;
     }
 
     @GetMapping("/profile-alignment/{profileId}")
@@ -118,12 +122,13 @@ public class TestController {
         private List<String> sibling;
     }
 
-    // ---------- helper: run a scoring session with optional seed ----------
+    // ---------- helper: run a scoring session with optional seed and profile ----------
     private ResponseEntity<?> runScoring(
             UUID userId,
             List<UUID> candidateTrackIds,
             ScoringSpecification spec,
-            UUID optionalSeedTrackId // can be null
+            UUID optionalSeedTrackId, // can be null
+            Profile optionalProfile // can be null
     ) {
         var userEntity = userRepository.findById(userId).orElseThrow();
         var trackEntities = trackRepository.findAllById(candidateTrackIds);
@@ -139,8 +144,12 @@ public class TestController {
             var seedEntity = trackRepository.findById(optionalSeedTrackId).orElseThrow();
             var seed = trackMapper.toTrackList(List.of(seedEntity)).get(0);
             facts.add(seed);
-            // If your DRL expects SeedTrackRequest, include it; otherwise, comment this out.
-            // facts.add(new SeedTrackRequest(UUID.randomUUID(), user.getId(), seed.getId(), /*yearDelta*/ null));
+            facts.add(new SeedTrackRequest(UUID.randomUUID(), user.getId(), seed.getId(), /*yearDelta*/ null));
+        }
+
+        // If profile is supplied, add it to the fact set
+        if (optionalProfile != null) {
+            facts.add(optionalProfile);
         }
 
         // Build candidates
@@ -161,7 +170,12 @@ public class TestController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error during Drools execution: " + e.getMessage());
         }
-        return ResponseEntity.ok(trackCandidates);
+
+        // Sort by score descending
+        var sortedCandidates = trackCandidates.stream()
+                .sorted(java.util.Comparator.comparingDouble(TrackCandidate::getScore).reversed())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(sortedCandidates);
     }
 
     // ---------------------------------------------------------------------
@@ -178,7 +192,7 @@ public class TestController {
                 UUID.fromString("39279a24-b3e2-4fe3-afbe-b912ae00213d")  // A5 Jazz
         );
         var spec = new ScoringSpecification(1.0, 0.0, 0.0, 0.0, 0.0); // B1 only
-        return runScoring(userId, candidates, spec, null);
+        return runScoring(userId, candidates, spec, null, null);
     }
 
     // ---------------------------------------------------------------------
@@ -196,7 +210,7 @@ public class TestController {
                 UUID.fromString("39279a24-b3e2-4fe3-afbe-b912ae00213d")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 1.0, 0.0); // B4 only
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
@@ -214,7 +228,7 @@ public class TestController {
                 UUID.fromString("39279a24-b3e2-4fe3-afbe-b912ae00213d")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 0.0, 1.0); // B5 only
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
@@ -232,7 +246,7 @@ public class TestController {
                 UUID.fromString("39279a24-b3e2-4fe3-afbe-b912ae00213d")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 0.5, 0.5); // B4 50%, B5 50%
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
@@ -247,7 +261,7 @@ public class TestController {
                 UUID.fromString("b36e2def-23e2-4ee8-b226-916259c13c6f")  // C3 Rock mismatch
         );
         var spec = new ScoringSpecification(1.0, 0.0, 0.0, 0.0, 0.0); // B1 only
-        return runScoring(userId, candidates, spec, null);
+        return runScoring(userId, candidates, spec, null, null);
     }
 
     // ---------------------------------------------------------------------
@@ -263,7 +277,7 @@ public class TestController {
                 UUID.fromString("b36e2def-23e2-4ee8-b226-916259c13c6f")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 1.0, 0.0); // B4 only
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
@@ -279,7 +293,7 @@ public class TestController {
                 UUID.fromString("b36e2def-23e2-4ee8-b226-916259c13c6f")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 0.0, 1.0); // B5 only
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
@@ -295,14 +309,14 @@ public class TestController {
                 UUID.fromString("b36e2def-23e2-4ee8-b226-916259c13c6f")
         );
         var spec = new ScoringSpecification(0.0, 0.0, 0.0, 0.5, 0.5); // B4 50%, B5 50%
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
     // T11: Full aggregation for U4 with Seed S3 (Chill/Jazz)
     //      weights: B1=0.2, B4=0.4, B5=0.4
     // ---------------------------------------------------------------------
-    @PostMapping("/score/9")
+    @PostMapping("/score/11")
     public ResponseEntity<?> t11_agg_u4() {
         var userId = UUID.fromString("185d2e39-c0d3-432a-aac5-12a0ce795351"); // U4
         var seedId = UUID.fromString("083ec8bb-0e41-4e7d-89c0-39d0c81f5fd7"); // S3 Chill Jazz
@@ -312,14 +326,14 @@ public class TestController {
                 UUID.fromString("4d0dcab6-f649-46d2-bdb8-53e3a645af17")  // D3 Jazz+Class
         );
         var spec = new ScoringSpecification(0.2, 0.0, 0.0, 0.4, 0.4);
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
     }
 
     // ---------------------------------------------------------------------
     // T12: Mixed cross-signal test (U1 + Seed S1) including E2 Rocktronica
     //      weights: B1=0.3, B4=0.35, B5=0.35
     // ---------------------------------------------------------------------
-    @PostMapping("/score/10")
+    @PostMapping("/score/12")
     public ResponseEntity<?> t12_mixed_u1() {
         var userId = UUID.fromString("6e1abf3b-b2b6-46d2-899f-657bff5cf327"); // U1
         var seedId = UUID.fromString("a230ad26-e58d-4313-9d9c-346eacacf9dd"); // S1
@@ -332,6 +346,92 @@ public class TestController {
                 UUID.fromString("c7ad185d-3085-46fc-8c5a-24c94a42bf20")  // E2 Rock+Electronic
         );
         var spec = new ScoringSpecification(0.3, 0.0, 0.0, 0.35, 0.35);
-        return runScoring(userId, candidates, spec, seedId);
+        return runScoring(userId, candidates, spec, seedId, null);
+    }
+
+    // ---------------------------------------------------------------------
+    // T9: B2 ONLY (Profile↔Genre) using Profile 'Dance' (implies Electronic)
+    // ---------------------------------------------------------------------
+    @PostMapping("/score/9")
+    public ResponseEntity<?> t9_b2_profileDance() {
+        var userId = UUID.fromString("6e1abf3b-b2b6-46d2-899f-657bff5cf327"); // U1
+
+        // Create Profile 'Dance' that aligns with Electronic genre via backwards chaining
+        var profileDance = createProfileDance();
+
+        // Use A1..A5 candidates: expect A4 (Electronic) = 1.0, others = 0.0
+        var candidates = List.of(
+                UUID.fromString("100ee75d-87d7-4fb9-879e-e80738e730a7"), // A1 Rock+Pop → 0.0
+                UUID.fromString("8315a9a4-881a-4e90-b498-6b46d7987ee0"), // A2 Rock → 0.0
+                UUID.fromString("b6626350-017c-4d5e-acde-7a4f32c5c46f"), // A3 Rock+Pop+Metal → 0.0
+                UUID.fromString("4cccc436-b1c0-4425-843e-f5e67f36e2f8"), // A4 Electronic → 1.0
+                UUID.fromString("39279a24-b3e2-4fe3-afbe-b912ae00213d")  // A5 Jazz → 0.0
+        );
+        var spec = new ScoringSpecification(0.0, 1.0, 0.0, 0.0, 0.0); // B2 only
+        return runScoring(userId, candidates, spec, null, profileDance);
+    }
+
+    // ---------------------------------------------------------------------
+    // T10: B3 ONLY (Profile↔Features) for Profile 'Chill'
+    // ---------------------------------------------------------------------
+    @PostMapping("/score/10")
+    public ResponseEntity<?> t10_b3_profileChill() {
+        var userId = UUID.fromString("185d2e39-c0d3-432a-aac5-12a0ce795351"); // U4
+
+        // Create Profile 'Chill' with target features
+        var profileChill = createProfileChill();
+
+        // Use U4 candidates: D1, D2, D3
+        // Expected: D1 > D3 > D2
+        var candidates = List.of(
+                UUID.fromString("a7bac5e4-9a5d-4a74-bbac-41db1780d6cd"), // D1 Jazz Ballad → ~0.9871
+                UUID.fromString("e6bd710f-afed-4e8c-b428-38248aa903ab"), // D2 Classical → ~0.9586
+                UUID.fromString("4d0dcab6-f649-46d2-bdb8-53e3a645af17")  // D3 Jazz+Class → ~0.9757
+        );
+        var spec = new ScoringSpecification(0.0, 0.0, 1.0, 0.0, 0.0); // B3 only
+        return runScoring(userId, candidates, spec, null, profileChill);
+    }
+
+    // ---------------------------------------------------------------------
+    // Helper methods to create test profiles
+    // ---------------------------------------------------------------------
+    private Profile createProfileDance() {
+        // Profile 'Dance' 94865de9-163d-4391-accf-0e7270afed9e
+        // Look up actual Electronic genre ID from database
+        var electronicGenre = genreRepository.findByName("Electronic");
+        if (electronicGenre.isEmpty()) {
+            throw new IllegalStateException("Electronic genre not found in database");
+        }
+        var electronicGenreId = electronicGenre.get().getId();
+
+        return new Profile(
+                UUID.fromString("94865de9-163d-4391-accf-0e7270afed9e"),
+                "Profile Dance",
+                null, // no target features for B2 test
+                java.util.Set.of(), // traits (not needed for direct test)
+                java.util.Set.of(electronicGenreId) // alignedGenres with actual Electronic genre ID
+        );
+    }
+
+    private Profile createProfileChill() {
+        // Profile 'Chill' 0a501e8b-6e9f-4599-9d1b-397bb136f74b
+        // Target features: d=0.30, e=0.30, s=0.04, a=0.60, i=0.00, l=0.10, v=0.30
+        var targetFeatures = new AudioFeatures(
+                0.30, // danceability
+                0.30, // energy
+                0.04, // speechiness
+                0.60, // acousticness
+                0.00, // instrumentalness
+                0.10, // liveness
+                0.30  // valence
+        );
+
+        return new Profile(
+                UUID.fromString("0a501e8b-6e9f-4599-9d1b-397bb136f74b"),
+                "Profile Chill",
+                targetFeatures,
+                java.util.Set.of(), // traits
+                java.util.Set.of()  // alignedGenres (not needed for B3 test)
+        );
     }
 }
