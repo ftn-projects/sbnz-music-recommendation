@@ -4,28 +4,41 @@ featureGetter
 
 package templates.featureSimilarity
 
-import com.ftn.model.*;
+dialect "java"
 
-template "B5 - Seed track audio feature similarity @{featureName}"
-rule "b5_@{featureName}_score"
-salience 10
+import com.ftn.model.User;
+import com.ftn.model.AudioFeatures;
+import com.ftn.model.ScoreComponent;
+import com.ftn.model.request.SeedTrackRequest;
+import com.ftn.model.specification.ScoringSpecification;
+import com.ftn.model.track.Track;
+import com.ftn.model.track.TrackCandidate;
+
+template "B5 - Seed feature similarity @{featureName}"
+
+rule "b5_@{featureName}_score" salience 10
 when
-    $spec : ScoringSpecification(wSeedFeatures != null && wSeedFeatures > 0)
+    $spec : ScoringSpecification( wSeedFeatures != null && wSeedFeatures > 0 )
 
-    $user : User($uid : id)
-    $candidate : TrackCandidate(userId == $uid, $tid : trackId)
-    $track : Track(id == $tid, features != null, $trackVal : features.@{featureGetter}())
+    // candidate track we're scoring
+    $cand : TrackCandidate( $tid : trackId )
+    $track : Track( id == $tid, features != null )
 
-    $seedReq : SeedTrackRequest(userId == $uid, $seedId : seedTrackId)
-    $seedTrack : Track(id == $seedId, features != null, $seedVal : features.@{featureGetter}())
+    // seed track context
+    $seedReq : SeedTrackRequest( seedTrackId != null )
+    $seed : Track( id == $seedReq.seedTrackId, features != null )
 
-    $similarity : Double() from (1.0 - Math.abs($trackVal - $seedVal))
+    // numeric bindings (Java)
+    $trackVal : Double() from ( $track.getFeatures().@{featureGetter}() )
+    $seedVal  : Double() from ( $seed.getFeatures().@{featureGetter}() )
+    $sim      : Double() from ( 1.0 - Math.abs($trackVal - $seedVal) )
 then
-    insert(new ScoreComponent(
-        $uid,
+    insert( new ScoreComponent(
+        $cand.getUserId(),
         $tid,
         ScoreComponent.Source.SEED_FEATURES,
-        $similarity * $spec.getWSeedFeatures()
-    ));
+        $sim * $spec.getWSeedFeatures()
+    ) );
 end
+
 end template

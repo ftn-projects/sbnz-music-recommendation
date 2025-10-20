@@ -1,11 +1,9 @@
 package com.ftn.service;
 
-import com.ftn.mapper.GenreMapper;
 import com.ftn.mapper.UserMapper;
 import com.ftn.model.Genre;
 import com.ftn.model.User;
 import com.ftn.model.UserEntity;
-import com.ftn.repository.GenreRepository;
 import com.ftn.repository.UserRepository;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.rule.FactHandle;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Syncs genre preferences from CEP events to database every 5 seconds.
@@ -25,38 +22,35 @@ import java.util.stream.Collectors;
  */
 @Service
 public class GenrePreferenceSyncService {
-    private static final Logger LOG = LoggerFactory.getLogger(GenrePreferenceSyncService.class);
-    private static final double LIKENESS_THRESHOLD = 0.5;
-    private static final double INFERRED_AFFINITY_BOOST = 0.1;
-    private static final double MIN_PREFERENCE = 0.0;
-    private static final double MAX_PREFERENCE = 1.0;
+    private static final Logger log = LoggerFactory.getLogger(GenrePreferenceSyncService.class);
+    private static final double LIKENESS_THRESHOLD = 0.6;
 
     private final UserActivityService userActivityService;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final KieSession backwardsSession;
-    private final List<Genre> allGenres;
 
     public GenrePreferenceSyncService(
             UserActivityService userActivityService,
             UserRepository userRepository,
-            GenreRepository genreRepository,
             UserMapper userMapper,
-            GenreMapper genreMapper,
             KieSession backwardsKsession) {
         this.userActivityService = userActivityService;
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.backwardsSession = backwardsKsession;
 
-        // Cache all genres once at startup
-        this.allGenres = genreRepository.findAll().stream()
-                .map(genreMapper::toGenre)
-                .collect(Collectors.toList());
-
-        LOG.info("GenrePreferenceSyncService initialized with {} genres for backwards chaining", allGenres.size());
+        this.backwardsSession.setGlobal("LIKENESS_THRESHOLD", LIKENESS_THRESHOLD);
+        log.info("GenrePreferenceSyncService initialized (syncing every 5 seconds)");
     }
 
+    /**
+     * Scheduled task that syncs genre preferences from CEP events to the database.
+     * Runs every 5 seconds. For each user with pending updates:
+     * 1. Applies direct preference changes from CEP events
+     * 2. Computes inferred preferences via backwards chaining (genre hierarchy)
+     * 3. Persists all changes to the database
+     */
     @Scheduled(fixedDelay = 5000) // Every 5 seconds
     @Transactional
     public void syncGenrePreferences() {
@@ -64,7 +58,7 @@ public class GenrePreferenceSyncService {
             Map<UUID, Double> updates = userActivityService.consumeGenreUpdates(userId);
             if (updates == null || updates.isEmpty()) continue;
 
-            LOG.info("Syncing {} genre preferences from CEP for user {}", updates.size(), userId);
+            log.info("Syncing {} genre preferences from CEP for user {}", updates.size(), userId);
 
             // Fetch user from database (assuming you have a User entity/model)
             var userOpt = userRepository.findById(userId);
@@ -75,21 +69,25 @@ public class GenrePreferenceSyncService {
 
             // Apply direct updates from CEP
             updates.forEach((genreId, delta) ->
-                    prefs.merge(genreId, delta, (old, d) -> Math.max(MIN_PREFERENCE, Math.min(MAX_PREFERENCE, old + d)))
+                    prefs.merge(genreId, delta, (old, d) -> Math.max(0.0, Math.min(1.0, old + d)))
             );
 
             // Use backwards chaining to infer genre affinities through hierarchy
-            computeInferredAffinities(user, updates.keySet());
+            computeInferredPreferences(user, updates.keySet());
 
             userRepository.save(user);
         }
     }
 
     /**
-     * Uses backwards chaining to determine if user likes genres based on hierarchy.
-     * Applies affinity boost to genres that the user likes through parent/child/sibling relationships.
+     * Uses backwards chaining queries to infer genre preferences through the genre hierarchy.
+     * For genres not directly affected by CEP events, applies a boost if the user likes them
+     * through parent/child/sibling relationships (userLikesUp, userLikesDown, userLikesViaParent).
+     *
+     * @param userEntity             The user entity to update (modified in-place)
+     * @param directlyAffectedGenres Genre IDs that were directly updated by CEP (excluded from boost)
      */
-    private void computeInferredAffinities(UserEntity userEntity, Set<UUID> directlyAffectedGenres) {
+    private void computeInferredPreferences(UserEntity userEntity, Set<UUID> directlyAffectedGenres) {
         // Create a User model object for the backwards chaining session
         User user = userMapper.toUser(userEntity);
 
@@ -97,33 +95,39 @@ public class GenrePreferenceSyncService {
         FactHandle userHandle = backwardsSession.insert(user);
 
         try {
-            // Check each genre to see if user likes it through the hierarchy
-            for (Genre genre : allGenres) {
+            Map<UUID, Double> prefs = userEntity.getGenrePreferences();
+
+            // Query all Genre facts from the session (already loaded by DroolsConfiguration)
+            for (Object obj : backwardsSession.getObjects(fact -> fact instanceof Genre)) {
+                Genre genre = (Genre) obj;
+                UUID genreId = genre.getId();
+
                 // Skip genres that were directly affected by CEP events
-                if (directlyAffectedGenres.contains(genre.getId())) {
+                if (directlyAffectedGenres.contains(genreId)) {
                     continue;
                 }
 
-                // Query backwards: does user like this genre (directly or through hierarchy)?
-                QueryResults results = backwardsSession.getQueryResults("userLikes", user, genre);
+                // Check if user likes this genre through hierarchy
+                boolean like =
+                        queryMatch("userLikesUp", user, genre)
+                                || queryMatch("userLikesDown", user, genre)
+                                || queryMatch("userLikesViaParent", user, genre);
 
-                if (results.size() > 0) {
-                    // User likes this genre through the hierarchy - apply boost to the entity
-                    UUID genreId = genre.getId();
-                    Map<UUID, Double> prefs = userEntity.getGenrePreferences();
+                if (like) {
                     double currentPref = prefs.getOrDefault(genreId, 0.0);
-                    double newPref = Math.max(MIN_PREFERENCE, Math.min(MAX_PREFERENCE, currentPref + INFERRED_AFFINITY_BOOST));
-
-                    if (Math.abs(newPref - currentPref) > 0.01) {
-                        prefs.put(genreId, newPref);
-                        LOG.debug("Inferred affinity for genre '{}' ({}): {} -> {}",
-                                genre.getName(), genreId, currentPref, newPref);
-                    }
+                    double newPref = Math.max(0.0, Math.min(1.0, currentPref + 0.08));
+                    prefs.put(genreId, newPref);
+                    log.debug("Inferred affinity for genre '{}' ({}): {} -> {}", genre.getName(), genreId, currentPref, newPref);
                 }
             }
         } finally {
             // Clean up: remove user from session
             backwardsSession.delete(userHandle);
         }
+    }
+
+    private boolean queryMatch(String queryName, User user, Genre genre) {
+        QueryResults results = backwardsSession.getQueryResults(queryName, user, genre);
+        return results != null && results.size() > 0;
     }
 }

@@ -1,46 +1,50 @@
-package rules.genreBackwardsl;
+package rules.genreBackwards;
 
 import com.ftn.model.Genre;
 import com.ftn.model.User;
-import java.util.UUID;
 
 global Double LIKENESS_THRESHOLD;
 
+/** Direct preference above threshold */
 query userLikesDirectly( User $u, Genre $g )
     eval( $u.getGenrePreferences().getOrDefault($g.getId(), 0.0) > LIKENESS_THRESHOLD )
 end
 
-query userLikesSubGenre( User $u, Genre $g )
-    $child : Genre( parentId == $g.getId() )
-    userLikes( $u, $child )
+/** UPWARD: child → parent (if a subgenre is liked, its ancestors are liked) */
+query userLikesUp( User $u, Genre $g )
+    // base
+    userLikesDirectly($u, $g;)
+or
+    // recurse upward via children: some child liked ⇒ this parent liked
+    (
+        $child : Genre(parentId == $g.getId())
+        and userLikesUp($u, $child;)
+    )
 end
 
-query userLikesBaseGenre( User $u, Genre $g )
-    Genre( this == $g, parentId != null )
-    $parent : Genre( id == $g.getParentId() )
-    userLikes( $u, $parent )
+/** DOWNWARD: parent → child (if a genre is liked, its descendants are liked) */
+query userLikesDown( User $u, Genre $g )
+    // base
+    userLikesDirectly($u, $g;)
+or
+    // recurse downward via parent: if parent liked ⇒ this child liked
+    (
+        Genre(this == $g, parentId != null, $pid : parentId)
+        and $parent : Genre(id == $pid)
+        and userLikesDown($u, $parent;)
+    )
 end
 
-query userLikesSiblingGenre( User $u, Genre $g )
-    $sib : Genre( parentId == $g.getParentId(), id != $g.getId() )
-    userLikes( $u, $sib )
-end
-
-query userLikes( User $u, Genre $g )
-    userLikesDirectly( $u, $g )
-    or
-    userLikesSubGenre( $u, $g )
-    or
-    userLikesBaseGenre( $u, $g )
-    or
-    userLikesSiblingGenre( $u, $g )
-end
-
-rule "Debug liked genre"
-when
-    $u : User()
-    $g : Genre()
-    userLikes($u, $g)
-then
-    System.out.println($u.getName() + " likes genre: " + $g.getName());
+/**
+ * SIBLINGS: derived via a liked parent (NO recursion here).
+ * This returns true when the parent of $g is liked (by the upward query),
+ * which implies "siblings" (other children of that parent) are liked.
+ *
+ * If you already use userLikesDown (parent→children), you don't need this,
+ * because a liked parent already implies all children (including $g).
+ */
+query userLikesViaParent( User $u, Genre $g )
+    Genre(this == $g, parentId != null, $pid : parentId)
+    and $parent : Genre(id == $pid)
+    and userLikesUp($u, $parent;)
 end

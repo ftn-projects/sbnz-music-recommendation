@@ -11,6 +11,8 @@
 -- ========================================
 
 -- Clean up existing data
+DELETE FROM profile_traits;
+DELETE FROM profiles;
 DELETE FROM user_genre_preferences;
 DELETE FROM user_library_tracks;
 DELETE FROM track_genres;
@@ -39,13 +41,13 @@ INSERT INTO users (id, name, age, explicit_content, include_owned, include_recen
 -- ========================================
 
 INSERT INTO genres (id, name) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Rock'),
-('a0000000-0000-0000-0000-000000000002', 'Pop'),
-('a0000000-0000-0000-0000-000000000003', 'Jazz'),
-('a0000000-0000-0000-0000-000000000004', 'Electronic'),
-('a0000000-0000-0000-0000-000000000005', 'Metal'),
-('a0000000-0000-0000-0000-000000000006', 'Hip Hop'),
-('a0000000-0000-0000-0000-000000000007', 'Classical');
+('10000000-0000-0000-0000-000000000001', 'Rock'),
+('10000000-0000-0000-0000-000000000002', 'Pop'),
+('10000000-0000-0000-0000-000000000003', 'Jazz'),
+('10000000-0000-0000-0000-000000000004', 'Electronic'),
+('10000000-0000-0000-0000-000000000005', 'Metal'),
+('10000000-0000-0000-0000-000000000006', 'Hip Hop'),
+('10000000-0000-0000-0000-000000000007', 'Classical');
 
 -- ========================================
 -- TEST TRACKS
@@ -54,11 +56,11 @@ INSERT INTO genres (id, name) VALUES
 -- SEED TRACK: Rock + Pop (genres: Rock, Pop)
 -- This will be used as seed for genre distance testing
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('s0000000-0000-0000-0000-000000000000', 'SEED - Rock Pop Mix', 'Test Artist', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('20000000-0000-0000-0000-000000000000', 'SEED - Rock Pop Mix', 'Test Artist', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('s0000000-0000-0000-0000-000000000000', 'a0000000-0000-0000-0000-000000000001'), -- Rock
-('s0000000-0000-0000-0000-000000000000', 'a0000000-0000-0000-0000-000000000002'); -- Pop
+('20000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000001'), -- Rock
+('20000000-0000-0000-0000-000000000000', '10000000-0000-0000-0000-000000000002'); -- Pop
 
 -- ========================================
 -- EXPLICIT CONTENT TEST TRACKS
@@ -66,27 +68,27 @@ INSERT INTO track_genres (track_id, genre_id) VALUES
 
 -- Track 1: Clean track
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000001', 'Clean Song 1', 'Artist A', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000001', 'Clean Song 1', 'Artist A', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001'); -- Rock
+('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'); -- Rock
 
 -- Track 2: Explicit track
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000002', 'Explicit Song 1', 'Artist B', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000002', 'Explicit Song 1', 'Artist B', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001'); -- Rock
+('30000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001'); -- Rock
 
 -- Track 3: Another clean track
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000003', 'Clean Song 2', 'Artist C', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000003', 'Clean Song 2', 'Artist C', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000002'); -- Pop
+('30000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000002'); -- Pop
 
 -- Track 4: Another explicit track
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000004', 'Explicit Song 2', 'Artist D', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000004', 'Explicit Song 2', 'Artist D', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000002'); -- Pop
+('30000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000002'); -- Pop
 
 -- ========================================
 -- GENRE DISTANCE TEST TRACKS
@@ -97,45 +99,45 @@ INSERT INTO track_genres (track_id, genre_id) VALUES
 -- Track 10: EXACT MATCH - genres: [Rock, Pop]
 -- Jaccard distance = 0.0 (perfect match) -> PASS (< 0.8)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000010', 'Exact Match Track', 'Artist E', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000010', 'Exact Match Track', 'Artist E', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000001'), -- Rock
-('t0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000002'); -- Pop
+('30000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000001'), -- Rock
+('30000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000002'); -- Pop
 
 -- Track 11: PARTIAL OVERLAP - genres: [Rock]
 -- Jaccard distance = 1 - (1/2) = 0.5 -> PASS (< 0.8)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000011', 'Partial Overlap Track', 'Artist F', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000011', 'Partial Overlap Track', 'Artist F', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000001'); -- Rock only
+('30000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000001'); -- Rock only
 
 -- Track 12: CLOSE MATCH - genres: [Rock, Pop, Metal]
 -- Jaccard distance = 1 - (2/3) = 0.333 -> PASS (< 0.8)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000012', 'Close Match Track', 'Artist G', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000012', 'Close Match Track', 'Artist G', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000001'), -- Rock
-('t0000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000002'), -- Pop
-('t0000000-0000-0000-0000-000000000012', 'a0000000-0000-0000-0000-000000000005'); -- Metal
+('30000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000001'), -- Rock
+('30000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000002'), -- Pop
+('30000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000005'); -- Metal
 
 -- Track 13: BORDERLINE - genres: [Rock, Metal, Hip Hop, Jazz, Electronic]
 -- Jaccard distance = 1 - (1/6) = 0.833 -> FILTERED (>= 0.8)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000013', 'Borderline Track', 'Artist H', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000013', 'Borderline Track', 'Artist H', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000001'), -- Rock (overlap)
-('t0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000005'), -- Metal
-('t0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000006'), -- Hip Hop
-('t0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000003'), -- Jazz
-('t0000000-0000-0000-0000-000000000013', 'a0000000-0000-0000-0000-000000000004'); -- Electronic
+('30000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000001'), -- Rock (overlap)
+('30000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000005'), -- Metal
+('30000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000006'), -- Hip Hop
+('30000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000003'), -- Jazz
+('30000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000004'); -- Electronic
 
 -- Track 14: COMPLETELY DIFFERENT - genres: [Jazz, Classical]
 -- Jaccard distance = 1 - (0/4) = 1.0 -> FILTERED (>= 0.8)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000014', 'Completely Different Track', 'Artist I', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000014', 'Completely Different Track', 'Artist I', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000003'), -- Jazz
-('t0000000-0000-0000-0000-000000000014', 'a0000000-0000-0000-0000-000000000007'); -- Classical
+('30000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000003'), -- Jazz
+('30000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000007'); -- Classical
 
 -- ========================================
 -- FORBIDDEN TRACKS TEST
@@ -143,33 +145,33 @@ INSERT INTO track_genres (track_id, genre_id) VALUES
 
 -- Track 20: In User1's Library
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000020', 'In Library 1', 'Artist J', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000020', 'In Library 1', 'Artist J', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000020', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000020', '10000000-0000-0000-0000-000000000001');
 
 -- Track 21: In User1's Library
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000021', 'In Library 2', 'Artist K', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000021', 'In Library 2', 'Artist K', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000021', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000021', '10000000-0000-0000-0000-000000000001');
 
 -- Track 22: Recently played by User1 (but not in library)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000022', 'Recently Played', 'Artist L', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000022', 'Recently Played', 'Artist L', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000022', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000022', '10000000-0000-0000-0000-000000000001');
 
 -- Track 23: In User3's Library
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000023', 'In Library 3', 'Artist M', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000023', 'In Library 3', 'Artist M', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000023', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000023', '10000000-0000-0000-0000-000000000001');
 
 -- Track 24: NOT in any library/recent (should always pass)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000024', 'Free Track', 'Artist N', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000024', 'Free Track', 'Artist N', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000024', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000024', '10000000-0000-0000-0000-000000000001');
 
 -- ========================================
 -- COMBINED TEST TRACKS
@@ -177,16 +179,16 @@ INSERT INTO track_genres (track_id, genre_id) VALUES
 
 -- Track 30: Explicit + In Library (double filter test)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000030', 'Explicit & In Library', 'Artist O', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000030', 'Explicit & In Library', 'Artist O', 2020, true, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000030', 'a0000000-0000-0000-0000-000000000001');
+('30000000-0000-0000-0000-000000000030', '10000000-0000-0000-0000-000000000001');
 
 -- Track 31: Clean + Not in library + Good genre match (should always pass)
 INSERT INTO tracks (id, title, artist, release_year, explicit, duration, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
-('t0000000-0000-0000-0000-000000000031', 'Perfect Track', 'Artist P', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
+('30000000-0000-0000-0000-000000000031', 'Perfect Track', 'Artist P', 2020, false, 200, 0.5, 0.5, 0.05, 0.5, 0.0, 0.1, 0.5);
 INSERT INTO track_genres (track_id, genre_id) VALUES
-('t0000000-0000-0000-0000-000000000031', 'a0000000-0000-0000-0000-000000000001'),
-('t0000000-0000-0000-0000-000000000031', 'a0000000-0000-0000-0000-000000000002');
+('30000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000001'),
+('30000000-0000-0000-0000-000000000031', '10000000-0000-0000-0000-000000000002');
 
 -- ========================================
 -- USER LIBRARY SETUP
@@ -194,21 +196,34 @@ INSERT INTO track_genres (track_id, genre_id) VALUES
 
 -- User 1: Clean Listener - Library tracks
 INSERT INTO user_library_tracks (user_id, track_id) VALUES
-('11111111-1111-1111-1111-111111111111', 't0000000-0000-0000-0000-000000000020'),
-('11111111-1111-1111-1111-111111111111', 't0000000-0000-0000-0000-000000000021'),
-('11111111-1111-1111-1111-111111111111', 't0000000-0000-0000-0000-000000000030');
+('11111111-1111-1111-1111-111111111111', '30000000-0000-0000-0000-000000000020'),
+('11111111-1111-1111-1111-111111111111', '30000000-0000-0000-0000-000000000021'),
+('11111111-1111-1111-1111-111111111111', '30000000-0000-0000-0000-000000000030');
 
 -- User 3: Library Keeper - Library tracks
 INSERT INTO user_library_tracks (user_id, track_id) VALUES
-('33333333-3333-3333-3333-333333333333', 't0000000-0000-0000-0000-000000000023');
+('33333333-3333-3333-3333-333333333333', '30000000-0000-0000-0000-000000000023');
 
 -- ========================================
 -- USER GENRE PREFERENCES (for completeness)
 -- ========================================
 INSERT INTO user_genre_preferences (user_id, genre_id, preference) VALUES
-('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-000000000001', 0.8), -- Rock
-('22222222-2222-2222-2222-222222222222', 'a0000000-0000-0000-0000-000000000001', 0.8), -- Rock
-('33333333-3333-3333-3333-333333333333', 'a0000000-0000-0000-0000-000000000001', 0.8); -- Rock
+('11111111-1111-1111-1111-111111111111', '10000000-0000-0000-0000-000000000001', 0.8), -- Rock
+('22222222-2222-2222-2222-222222222222', '10000000-0000-0000-0000-000000000001', 0.8), -- Rock
+('33333333-3333-3333-3333-333333333333', '10000000-0000-0000-0000-000000000001', 0.8); -- Rock
+
+-- ========================================
+-- TEST PROFILES
+-- ========================================
+
+-- Profile 1: "Energetic Rock Profile" - For profile-based recommendations
+-- Target features: moderate-high energy, moderate danceability, low acousticness
+INSERT INTO profiles (id, name, danceability, energy, speechiness, acousticness, instrumentalness, liveness, valence) VALUES
+('40000000-0000-0000-0000-000000000001', 'Energetic Rock Profile', 0.6, 0.7, 0.05, 0.2, 0.1, 0.15, 0.6);
+
+-- Profile traits (optional - can be empty if not needed for filter tests)
+-- INSERT INTO profile_traits (profile_id, trait_id) VALUES
+-- ('40000000-0000-0000-0000-000000000001', 'some-trait-id-here');
 
 -- ========================================
 -- TEST SCENARIOS SUMMARY
@@ -322,4 +337,3 @@ HOW TO TEST
 5. Verify passed tracks ARE in results (with score > 0)
 
 */
-

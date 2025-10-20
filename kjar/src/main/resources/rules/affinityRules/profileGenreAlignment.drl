@@ -17,7 +17,7 @@ import com.ftn.util.Scoring
  * Penalty: Track genres don't match profile's aligned genres
  */
 
-rule "B2 - Profile Genre Alignment Affinity"
+rule "B2 - Profile Genre Alignment Affinity" salience 10
     when
         $user : User($userId : id)
         $profile : Profile($alignedGenres : alignedGenres != null && !alignedGenres.isEmpty())

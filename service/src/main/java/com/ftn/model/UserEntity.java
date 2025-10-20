@@ -20,6 +20,7 @@ public class UserEntity {
     private UUID id = UUID.randomUUID();
 
     private String name;
+    private String username;
     private Integer age;
 
     @ElementCollection
@@ -53,11 +54,10 @@ public class UserEntity {
         private Boolean includeRecent;
     }
 
-    public UserEntity(String name, Integer age, Preferences preferences) {
+    public UserEntity(String name, Integer age, String username) {
         this.name = name;
         this.age = age;
-        this.genrePreferences = new HashMap<>();
-        this.libraryTrackIds = new HashSet<>();
-        this.preferences = preferences;
+        this.username = username;
+        this.preferences = new Preferences(false, true, true);
     }
 }

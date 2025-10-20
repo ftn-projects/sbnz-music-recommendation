@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class RecommendationService {
-    private static final Logger LOG = LoggerFactory.getLogger(RecommendationService.class);
+    private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
 
     private final KieBase kieBase;
     private final ExecutorService pool;
@@ -91,8 +91,8 @@ public class RecommendationService {
         }
     }
 
-    public List<UUID> recommendForProfile(UUID userId, UUID profileId) {
-        LOG.info("Starting profile-based recommendation: user={}, profile={}", userId, profileId);
+    public List<TrackCandidate> recommendForProfile(UUID userId, UUID profileId) {
+        log.info("Starting profile-based recommendation: user={}, profile={}", userId, profileId);
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
         var profile = profileMapper.toProfile(
@@ -102,7 +102,7 @@ public class RecommendationService {
 
         // Compute aligned genres via backwards chaining BEFORE starting forward chaining
         profileAlignmentService.computeAlignedGenres(profile);
-        LOG.info("Profile '{}' aligned genres computed: {} genres", profile.getName(), profile.getAlignedGenres().size());
+        log.info("Profile '{}' aligned genres computed: {} genres", profile.getName(), profile.getAlignedGenres().size());
 
         // Create ProfileRequest
         var profileRequest = new ProfileRequest(
@@ -114,8 +114,8 @@ public class RecommendationService {
         return runBatchRecommendation(user, profile, profileRequest, null);
     }
 
-    public List<UUID> recommendForTrack(UUID userId, UUID seedTrackId, Integer yearDeltaMax) {
-        LOG.info("Starting seed-track recommendation: user={}, seedTrack={}, yearDeltaMax={}", userId, seedTrackId, yearDeltaMax);
+    public List<TrackCandidate> recommendForTrack(UUID userId, UUID seedTrackId, Integer yearDeltaMax) {
+        log.info("Starting seed-track recommendation: user={}, seedTrack={}, yearDeltaMax={}", userId, seedTrackId, yearDeltaMax);
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
 
@@ -130,7 +130,7 @@ public class RecommendationService {
         return runBatchRecommendation(user, null, null, seedRequest);
     }
 
-    private List<UUID> runBatchRecommendation(
+    private List<TrackCandidate> runBatchRecommendation(
             UserEntity userEntity,
             Profile profile,
             ProfileRequest profileRequest,
@@ -138,7 +138,7 @@ public class RecommendationService {
         var total = trackRepository.getTotal();
         var pages = planPages(total, batchSize);
 
-        LOG.info("Planned recommendation run: totalTracks={}, batchSize={}, pages={}", total, batchSize, pages.size());
+        log.info("Planned recommendation run: totalTracks={}, batchSize={}, pages={}", total, batchSize, pages.size());
 
         var context = new RequestContext(
                 userEntity.getLibraryTrackIds(),
@@ -161,10 +161,9 @@ public class RecommendationService {
         var result = allScoredTracks.stream()
                 .sorted(Comparator.comparingDouble(TrackCandidate::getScore).reversed())
                 .limit(topN)
-                .map(TrackCandidate::getTrackId)
                 .collect(Collectors.toList());
 
-        LOG.info("Recommendation completed: returnedTopN={}, candidatesConsidered={}", result.size(), allScoredTracks.size());
+        log.info("Recommendation completed: returnedTopN={}, candidatesConsidered={}", result.size(), allScoredTracks.size());
         return result;
     }
 
@@ -175,11 +174,11 @@ public class RecommendationService {
             SeedTrackRequest seedRequest,
             RequestContext context,
             Page page) {
-        LOG.debug("Processing page offset={}, limit={}", page.getOffset(), page.getLimit());
+        log.debug("Processing page offset={}, limit={}", page.getOffset(), page.getLimit());
 
         var trackEntities = trackRepository.findAllPaginated(page.getOffset(), page.getLimit());
         if (trackEntities.isEmpty()) {
-            LOG.debug("No tracks returned for page offset={}, limit={}", page.getOffset(), page.getLimit());
+            log.debug("No tracks returned for page offset={}, limit={}", page.getOffset(), page.getLimit());
             return Collections.emptyList();
         }
 
@@ -191,11 +190,11 @@ public class RecommendationService {
         if (debugRules) {
             try {
                 session.addEventListener(new DebugAgendaEventListener());
-                LOG.info("Attached DebugAgendaEventListener for page offset={}, limit={}", page.getOffset(), page.getLimit());
+                log.info("Attached DebugAgendaEventListener for page offset={}, limit={}", page.getOffset(), page.getLimit());
                 session.addEventListener(new DebugRuleRuntimeEventListener());
-                LOG.info("Attached DebugRuleRuntimeEventListener for page offset={}, limit={}", page.getOffset(), page.getLimit());
+                log.info("Attached DebugRuleRuntimeEventListener for page offset={}, limit={}", page.getOffset(), page.getLimit());
             } catch (Exception e) {
-                LOG.warn("Failed to attach DebugAgendaEventListener: {}", e.getMessage());
+                log.warn("Failed to attach DebugAgendaEventListener: {}", e.getMessage());
             }
         }
 
@@ -229,7 +228,7 @@ public class RecommendationService {
         try {
             session.execute(facts);
         } catch (Exception e) {
-            LOG.error("Error executing Drools session for page offset={}, limit={}: {}", page.getOffset(), page.getLimit(), e.getMessage(), e);
+            log.error("Error executing Drools session for page offset={}, limit={}: {}", page.getOffset(), page.getLimit(), e.getMessage(), e);
         }
 
         var beforeFilter = trackCandidates.size();
@@ -237,7 +236,7 @@ public class RecommendationService {
                 .filter(candidate -> candidate.getScore() > 0)
                 .collect(Collectors.toList());
         var afterFilter = filtered.size();
-        LOG.debug("Page processed offset={}, limit={}, candidatesBefore={}, candidatesAfter={}", page.getOffset(), page.getLimit(), beforeFilter, afterFilter);
+        log.debug("Page processed offset={}, limit={}, candidatesBefore={}, candidatesAfter={}", page.getOffset(), page.getLimit(), beforeFilter, afterFilter);
 
         // Return only the candidates that weren't filtered out and have scores
         return filtered;

@@ -27,7 +27,7 @@ public class TraitEntity {
     @Column(name = "parent_id")
     private UUID parentId;  // Parent trait for hierarchy
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "trait_genres", joinColumns = @JoinColumn(name = "trait_id"))
     @Column(name = "genre_id")
     private Set<UUID> genreIds = new HashSet<>();

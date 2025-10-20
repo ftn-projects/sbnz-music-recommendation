@@ -7,7 +7,6 @@ import com.ftn.model.track.TrackCandidate;
 import com.ftn.model.specification.ScoringSpecification;
 import com.ftn.model.request.SeedTrackRequest;
 import com.ftn.model.ScoreComponent;
-import com.ftn.model.track.RecommendationProposal;
 
 rule "B1 - User taste (custom accumulate, 0 if none)" salience 10
 dialect "java"

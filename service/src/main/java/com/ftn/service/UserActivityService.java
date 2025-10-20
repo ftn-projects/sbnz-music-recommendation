@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class UserActivityService {
-    private static final Logger LOG = LoggerFactory.getLogger(UserActivityService.class);
+    private static final Logger log = LoggerFactory.getLogger(UserActivityService.class);
 
     @Value("${user-activity.recent-track-expiry-ms:600000}")
     private long recentTrackExpiryMs;
@@ -34,12 +34,12 @@ public class UserActivityService {
 
     public void onGenreLikedEvent(GenreLikedEvent event) {
         genreUpdates.computeIfAbsent(event.getUserId(), k -> new ConcurrentHashMap<>())
-                .merge(event.getGenreId(), 1.0, Double::sum);
+                .merge(event.getGenreId(), 0.1, Double::sum);
     }
 
     public void onGenreDislikedEvent(GenreDislikedEvent event) {
         genreUpdates.computeIfAbsent(event.getUserId(), k -> new ConcurrentHashMap<>())
-                .merge(event.getGenreId(), -1.0, Double::sum);
+                .merge(event.getGenreId(), 0.1, Double::sum);
     }
 
     public Set<UUID> getRecentTrackIds(UUID userId) {

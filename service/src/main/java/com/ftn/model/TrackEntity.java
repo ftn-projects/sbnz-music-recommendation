@@ -11,7 +11,10 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "tracks")
+@Table(name = "tracks", indexes = {
+        @Index(name = "idx_track_title", columnList = "title"),
+        @Index(name = "idx_track_artist", columnList = "artist")
+})
 public class TrackEntity {
     @Id
     @EqualsAndHashCode.Include

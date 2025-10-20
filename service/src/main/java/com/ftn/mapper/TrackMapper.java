@@ -1,5 +1,6 @@
 package com.ftn.mapper;
 
+import com.ftn.dto.TrackDTO;
 import com.ftn.model.AudioFeatures;
 import com.ftn.model.AudioFeaturesEntity;
 import com.ftn.model.TrackEntity;
@@ -15,5 +16,7 @@ public interface TrackMapper {
     List<Track> toTrackList(List<TrackEntity> entities);
 
     AudioFeatures toTrackFeatures(AudioFeaturesEntity entityFeatures);
+
+    TrackDTO toDTO(TrackEntity entity);
 }
 

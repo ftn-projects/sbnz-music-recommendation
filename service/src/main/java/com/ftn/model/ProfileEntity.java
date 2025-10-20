@@ -22,7 +22,7 @@ public class ProfileEntity {
     @Embedded
     private AudioFeaturesEntity targetFeatures;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "profile_traits", joinColumns = @JoinColumn(name = "profile_id"))
     @Column(name = "trait_id")
     private Set<UUID> traitIds = new HashSet<>();
